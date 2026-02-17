@@ -1,0 +1,118 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "UCS Client Schema",
+  "description": "JSON schema for validating UCS Client data structure",
+  "type": "object",
+  "required": ["identifiers", "demographics", "metadata"],
+  "properties": {
+    "identifiers": {
+      "type": "object",
+      "required": ["opensrp_id"],
+      "properties": {
+        "opensrp_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "OpenSRP identifier (required)"
+        },
+        "national_id": {
+          "type": ["string", "null"],
+          "description": "National ID (optional)"
+        }
+      }
+    },
+    "demographics": {
+      "type": "object",
+      "required": ["firstName", "lastName", "gender", "birthDate"],
+      "properties": {
+        "firstName": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Client's first name"
+        },
+        "lastName": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Client's last name"
+        },
+        "gender": {
+          "type": "string",
+          "enum": ["M", "F", "O"],
+          "description": "Gender code: M (Male), F (Female), O (Other)"
+        },
+        "birthDate": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "Birth date in YYYY-MM-DD format"
+        },
+        "address": {
+          "type": ["object", "null"],
+          "properties": {
+            "district": {
+              "type": "string",
+              "description": "District name"
+            },
+            "ward": {
+              "type": "string",
+              "description": "Ward name"
+            },
+            "village": {
+              "type": "string",
+              "description": "Village name"
+            }
+          }
+        }
+      }
+    },
+    "clinicalData": {
+      "type": ["object", "null"],
+      "properties": {
+        "observations": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "Clinical observations"
+        },
+        "medications": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "Medication records"
+        },
+        "procedures": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "Procedure records"
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["source"],
+      "properties": {
+        "createdAt": {
+          "type": ["string", "null"],
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})?$",
+          "description": "Creation timestamp in ISO8601 format"
+        },
+        "updatedAt": {
+          "type": ["string", "null"],
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})?$",
+          "description": "Last update timestamp in ISO8601 format"
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Source system identifier"
+        },
+        "fhir_id": {
+          "type": ["string", "null"],
+          "description": "FHIR resource ID for reverse mapping"
+        }
+      }
+    }
+  }
+}

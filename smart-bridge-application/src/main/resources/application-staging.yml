@@ -1,0 +1,38 @@
+# Staging environment configuration
+spring:
+  rabbitmq:
+    host: ${RABBITMQ_HOST:rabbitmq-staging.internal}
+    port: 5672
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
+
+smartbridge:
+  openhim:
+    core-url: ${OPENHIM_CORE_URL:https://openhim-staging.internal:8080}
+    trust-self-signed: false
+  
+  fhir:
+    server-url: ${FHIR_SERVER_URL:https://fhir-staging.internal/fhir}
+  
+  ucs:
+    api-url: ${UCS_API_URL:https://ucs-staging.internal/api}
+  
+  transformation:
+    strict-mode: true
+    validation-enabled: true
+  
+  resilience:
+    circuit-breaker:
+      failure-threshold: 3
+      cooldown-seconds: 60
+  
+  security:
+    tls:
+      enabled: true
+      verify-hostname: true
+
+logging:
+  level:
+    root: INFO
+    com.smartbridge: INFO
+    ca.uhn.fhir: WARN

@@ -1,0 +1,45 @@
+# Production profile configuration
+logging:
+  level:
+    root: WARN
+    com.smartbridge: INFO
+    ca.uhn.fhir: WARN
+
+server:
+  ssl:
+    enabled: true
+
+smartbridge:
+  fhir:
+    server-url: ${FHIR_SERVER_URL}
+    timeout: 30000
+  ucs:
+    api-url: ${UCS_API_URL}
+    timeout: 10000
+    auth-type: ${UCS_AUTH_TYPE:token}
+  transformation:
+    strict-mode: true
+    validation-enabled: true
+  security:
+    tls:
+      enabled: true
+      protocol: TLSv1.3
+      verify-hostname: true
+    encryption:
+      key: ${ENCRYPTION_KEY}
+    token:
+      auto-rotation-enabled: true
+      rotation-interval-hours: 24
+  resilience:
+    circuit-breaker:
+      failure-threshold: 5
+      cooldown-seconds: 30
+      success-threshold: 3
+    retry:
+      max-attempts: 5
+      initial-delay-millis: 1000
+      max-delay-millis: 32000
+      backoff-multiplier: 2.0
+  monitoring:
+    metrics-enabled: true
+    audit-enabled: true

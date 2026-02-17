@@ -1,0 +1,232 @@
+spring:
+  application:
+    name: smart-bridge
+  profiles:
+    active: dev
+
+# Server configuration
+server:
+  port: 8080
+  servlet:
+    context-path: /smart-bridge
+  ssl:
+    enabled: ${SSL_ENABLED:false}
+    key-store: ${SSL_KEYSTORE_PATH:classpath:keystore.p12}
+    key-store-password: ${SSL_KEYSTORE_PASSWORD:changeit}
+    key-store-type: PKCS12
+    key-alias: smartbridge
+
+# Management endpoints for monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  metrics:
+    tags:
+      application: smart-bridge
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      slo:
+        http.server.requests: 100ms,200ms,500ms,1s,5s
+
+# Smart Bridge specific configuration
+smartbridge:
+  # OpenHIM configuration
+  openhim:
+    core-url: ${OPENHIM_CORE_URL:http://localhost:8080}
+    api-username: ${OPENHIM_USERNAME:root@openhim.org}
+    api-password: ${OPENHIM_PASSWORD:password}
+    trust-self-signed: ${OPENHIM_TRUST_SELF_SIGNED:true}
+  
+  # HAPI FHIR configuration
+  fhir:
+    server-url: ${FHIR_SERVER_URL:http://localhost:8082/fhir}
+    timeout: ${FHIR_TIMEOUT:30000}
+    
+  # UCS system configuration
+  ucs:
+    api-url: ${UCS_API_URL:http://localhost:8081/ucs}
+    timeout: ${UCS_TIMEOUT:10000}
+    auth-type: ${UCS_AUTH_TYPE:token}
+    username: ${UCS_USERNAME:}
+    password: ${UCS_PASSWORD:}
+  
+  # Sync configuration
+  sync:
+    interval-ms: ${SYNC_INTERVAL_MS:300000}  # 5 minutes
+    enabled: ${SYNC_ENABLED:true}
+    
+  # Transformation configuration
+  transformation:
+    validation-enabled: ${TRANSFORMATION_VALIDATION:true}
+    strict-mode: ${TRANSFORMATION_STRICT:false}
+    thread-pool:
+      core-size: ${TRANSFORMATION_POOL_CORE:10}
+      max-size: ${TRANSFORMATION_POOL_MAX:20}
+      queue-capacity: ${TRANSFORMATION_QUEUE_CAPACITY:100}
+    
+  # Reverse sync configuration
+  reverse-sync:
+    thread-pool:
+      core-size: ${REVERSE_SYNC_POOL_CORE:5}
+      max-size: ${REVERSE_SYNC_POOL_MAX:10}
+      queue-capacity: ${REVERSE_SYNC_QUEUE_CAPACITY:50}
+    
+  # Monitoring configuration
+  monitoring:
+    metrics-enabled: ${METRICS_ENABLED:true}
+    audit-enabled: ${AUDIT_ENABLED:true}
+  
+  # Resilience configuration
+  resilience:
+    circuit-breaker:
+      failure-threshold: ${CIRCUIT_BREAKER_FAILURE_THRESHOLD:5}
+      cooldown-seconds: ${CIRCUIT_BREAKER_COOLDOWN:30}
+      success-threshold: ${CIRCUIT_BREAKER_SUCCESS_THRESHOLD:3}
+    retry:
+      max-attempts: ${RETRY_MAX_ATTEMPTS:3}
+      initial-delay-millis: ${RETRY_INITIAL_DELAY:1000}
+      max-delay-millis: ${RETRY_MAX_DELAY:32000}
+      backoff-multiplier: ${RETRY_BACKOFF_MULTIPLIER:2.0}
+    network-monitor:
+      enabled: ${NETWORK_MONITOR_ENABLED:true}
+      check-interval-seconds: ${NETWORK_MONITOR_INTERVAL:30}
+      timeout-millis: ${NETWORK_MONITOR_TIMEOUT:5000}
+  
+  # Security configuration
+  security:
+    tls:
+      enabled: ${TLS_ENABLED:true}
+      keystore-path: ${TLS_KEYSTORE_PATH:}
+      keystore-password: ${TLS_KEYSTORE_PASSWORD:}
+      truststore-path: ${TLS_TRUSTSTORE_PATH:}
+      truststore-password: ${TLS_TRUSTSTORE_PASSWORD:}
+      protocol: ${TLS_PROTOCOL:TLSv1.3}
+      verify-hostname: ${TLS_VERIFY_HOSTNAME:true}
+    encryption:
+      key: ${ENCRYPTION_KEY:changeme-use-strong-key}
+    token:
+      rotation-interval-hours: ${TOKEN_ROTATION_INTERVAL:24}
+      grace-period-hours: ${TOKEN_GRACE_PERIOD:1}
+      auto-rotation-enabled: ${TOKEN_AUTO_ROTATION:true}
+      rotation-check-cron: ${TOKEN_ROTATION_CRON:0 0 * * * *}
+      monitored-systems: ${TOKEN_MONITORED_SYSTEMS:ucs-system,fhir-system,gothomis-system}
+
+# RabbitMQ configuration
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: ${RABBITMQ_VHOST:/}
+    listener:
+      simple:
+        acknowledge-mode: auto
+        concurrency: ${RABBITMQ_CONSUMER_CONCURRENCY:5}
+        max-concurrency: ${RABBITMQ_CONSUMER_MAX_CONCURRENCY:10}
+        prefetch: ${RABBITMQ_CONSUMER_PREFETCH:10}
+
+# Logging configuration
+logging:
+  config: classpath:logback-spring.xml
+  level:
+    com.smartbridge: DEBUG
+    ca.uhn.fhir: INFO
+    org.springframework: INFO
+
+---
+# Development profile
+spring:
+  config:
+    activate:
+      on-profile: dev
+  
+logging:
+  level:
+    root: DEBUG
+    com.smartbridge: DEBUG
+
+smartbridge:
+  transformation:
+    strict-mode: false
+
+---
+# Production profile
+spring:
+  config:
+    activate:
+      on-profile: prod
+  rabbitmq:
+    host: ${RABBITMQ_HOST:rabbitmq-prod.internal}
+    port: 5672
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
+    ssl:
+      enabled: true
+
+smartbridge:
+  openhim:
+    core-url: ${OPENHIM_CORE_URL:https://openhim-prod.internal:8080}
+    trust-self-signed: false
+  
+  fhir:
+    server-url: ${FHIR_SERVER_URL:https://fhir-prod.internal/fhir}
+  
+  ucs:
+    api-url: ${UCS_API_URL:https://ucs-prod.internal/api}
+  
+  transformation:
+    strict-mode: true
+    validation-enabled: true
+    thread-pool:
+      core-size: 20
+      max-size: 50
+      queue-capacity: 500
+  
+  reverse-sync:
+    thread-pool:
+      core-size: 10
+      max-size: 20
+      queue-capacity: 200
+  
+  resilience:
+    circuit-breaker:
+      failure-threshold: 3
+      cooldown-seconds: 60
+      success-threshold: 5
+    retry:
+      max-attempts: 5
+    network-monitor:
+      check-interval-seconds: 15
+  
+  security:
+    tls:
+      enabled: true
+      verify-hostname: true
+      protocol: TLSv1.3
+    token:
+      auto-rotation-enabled: true
+
+logging:
+  level:
+    root: WARN
+    com.smartbridge: INFO
+    ca.uhn.fhir: ERROR
+    org.springframework: WARN

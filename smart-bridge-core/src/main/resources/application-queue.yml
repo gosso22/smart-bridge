@@ -1,0 +1,25 @@
+spring:
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: ${RABBITMQ_VHOST:/}
+    listener:
+      simple:
+        retry:
+          enabled: false  # We handle retries manually with exponential backoff
+        acknowledge-mode: auto
+        prefetch: 10
+    template:
+      retry:
+        enabled: true
+        initial-interval: 1000
+        max-attempts: 3
+        multiplier: 2.0
+
+# Message Queue Configuration
+message-queue:
+  max-retries: 5
+  initial-delay-ms: 1000
+  max-delay-ms: 32000

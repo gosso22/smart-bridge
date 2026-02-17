@@ -1,0 +1,37 @@
+# Development profile configuration
+logging:
+  level:
+    root: DEBUG
+    com.smartbridge: DEBUG
+    ca.uhn.fhir: INFO
+
+server:
+  ssl:
+    enabled: false
+
+smartbridge:
+  fhir:
+    server-url: http://localhost:8082/fhir
+    timeout: 30000
+  ucs:
+    api-url: http://localhost:8081/ucs
+    timeout: 10000
+    auth-type: token
+  transformation:
+    strict-mode: false
+    validation-enabled: true
+  security:
+    tls:
+      enabled: false
+    token:
+      auto-rotation-enabled: false
+  resilience:
+    circuit-breaker:
+      failure-threshold: 3
+      cooldown-seconds: 10
+      success-threshold: 2
+    retry:
+      max-attempts: 2
+      initial-delay-millis: 500
+      max-delay-millis: 5000
+      backoff-multiplier: 2.0
