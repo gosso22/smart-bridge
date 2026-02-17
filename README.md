@@ -108,16 +108,6 @@ Custom metrics include:
 - FHIR and UCS operation counts
 - Audit log and security event counts
 
-## Next Steps
-
-Refer to `.kiro/specs/smart-bridge/tasks.md` for the implementation plan. The next tasks involve:
-
-1. Implementing data models with JSON schema validation
-2. Building the core transformation engine
-3. Integrating HAPI FHIR client services
-4. Developing OpenHIM mediators
-5. Implementing error handling and message queuing
-
 ## License
 
 Copyright © 2026 Smart Bridge Project
