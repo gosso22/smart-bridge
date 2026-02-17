@@ -1,0 +1,25 @@
+# OpenHIM Mediator Configuration
+openhim:
+  enabled: false  # Set to true to enable OpenHIM integration
+  core:
+    url: http://localhost:8080
+    username: root@openhim.org
+    password: openhim-password
+
+# Server Configuration
+server:
+  port: 8081
+
+# Logging Configuration
+logging:
+  level:
+    com.smartbridge.mediators: INFO
+    com.smartbridge.audit: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Spring Configuration
+spring:
+  application:
+    name: smart-bridge-mediators
