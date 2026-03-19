@@ -5,8 +5,8 @@ import com.smartbridge.core.model.ucs.UCSClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -91,38 +91,22 @@ class UCSApiClientTest {
     }
 
     private UCSClient createTestClient() {
-        UCSClient.UCSIdentifiers identifiers = new UCSClient.UCSIdentifiers(
-            "opensrp-123",
-            "national-456"
-        );
-        
-        UCSClient.UCSAddress address = new UCSClient.UCSAddress(
-            "Dar es Salaam",
-            "Kinondoni",
-            "Mwenge"
-        );
-        
-        UCSClient.UCSDemographics demographics = new UCSClient.UCSDemographics(
-            "John",
-            "Doe",
-            "M",
-            LocalDate.of(1990, 1, 1),
-            address
-        );
-        
-        UCSClient.UCSClinicalData clinicalData = new UCSClient.UCSClinicalData(
-            null,
-            null,
-            null
-        );
-        
-        UCSClient.UCSMetadata metadata = new UCSClient.UCSMetadata(
-            LocalDateTime.now(),
-            LocalDateTime.now(),
-            "UCS",
-            null
-        );
-        
-        return new UCSClient(identifiers, demographics, clinicalData, metadata);
+        UCSClient client = new UCSClient();
+        client.setBaseEntityId("test-entity-001");
+
+        Map<String, String> identifiers = new HashMap<>();
+        identifiers.put("opensrp_id", "opensrp-123");
+        client.setIdentifiers(identifiers);
+
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put("national_id", "national-456");
+        client.setAttributes(attributes);
+
+        client.setFirstName("John");
+        client.setLastName("Doe");
+        client.setGender("M");
+        client.setBirthdate("1990-01-01");
+
+        return client;
     }
 }

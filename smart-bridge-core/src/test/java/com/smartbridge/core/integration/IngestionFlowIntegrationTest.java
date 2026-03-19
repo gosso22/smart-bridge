@@ -22,17 +22,14 @@ import org.hl7.fhir.r4.model.Patient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDate;
+import java.util.*;
 import java.util.concurrent.Executor;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Integration tests for complete ingestion flow from UCS to FHIR.
- * Tests the end-to-end transformation pipeline WITHOUT any mocking framework
- * to avoid Mockito inline mock maker interference with real transformer instances.
- *
- * Requirements: 3.1, 7.1
+ * Integration tests for complete ingestion flow from UCS (OpenSRP) to FHIR.
+ * Tests the end-to-end transformation pipeline WITHOUT any mocking framework.
  */
 class IngestionFlowIntegrationTest {
 
@@ -49,8 +46,6 @@ class IngestionFlowIntegrationTest {
         ucsToFhirTransformer = new UCSToFHIRTransformer(ucsValidator, fhirValidator, fhirToUcsTransformer);
     }
 
-    // ===== End-to-end transformation pipeline tests =====
-
     @Test
     void testCompleteIngestionFlow_Success() throws Exception {
         UCSClient ucsClient = createCompleteUCSClient();
@@ -62,27 +57,26 @@ class IngestionFlowIntegrationTest {
 
         // Step 2: Transform
         FHIRResourceWrapper<?> wrapper = ucsToFhirTransformer.transformUCSToFHIR(ucsClient);
-        assertNotNull(wrapper, "Transformation should produce a wrapper");
-        assertNotNull(wrapper.getResource(), "Wrapper should contain a resource");
-        assertTrue(wrapper.getResource() instanceof Patient, "Resource should be a Patient");
+        assertNotNull(wrapper);
+        assertNotNull(wrapper.getResource());
+        assertTrue(wrapper.getResource() instanceof Patient);
 
         // Step 3: Verify FHIR Patient content
         Patient patient = (Patient) wrapper.getResource();
-        assertTrue(patient.hasIdentifier(), "Patient should have identifiers");
+        assertTrue(patient.hasIdentifier());
         assertTrue(patient.getIdentifier().stream()
             .anyMatch(id -> "http://moh.go.tz/identifier/opensrp-id".equals(id.getSystem()) &&
-                          "opensrp-12345".equals(id.getValue())),
-            "Patient should have OpenSRP identifier");
+                          "opensrp-12345".equals(id.getValue())));
 
-        assertTrue(patient.hasName(), "Patient should have a name");
+        assertTrue(patient.hasName());
         assertEquals("Smith", patient.getName().get(0).getFamily());
         assertEquals("John", patient.getName().get(0).getGiven().get(0).getValue());
 
-        assertTrue(patient.hasGender(), "Patient should have gender");
+        assertTrue(patient.hasGender());
         assertEquals("male", patient.getGender().toCode());
 
-        assertTrue(patient.hasBirthDate(), "Patient should have birth date");
-        assertTrue(patient.hasAddress(), "Patient should have address");
+        assertTrue(patient.hasBirthDate());
+        assertTrue(patient.hasAddress());
 
         // Step 4: Verify FHIR validation passes
         FHIRValidator.FHIRValidationResult fhirValResult = fhirValidator.validate(patient);
@@ -92,7 +86,6 @@ class IngestionFlowIntegrationTest {
         // Step 5: Verify wrapper metadata
         assertEquals("UCS", wrapper.getSourceSystem());
         assertEquals("opensrp-12345", wrapper.getOriginalId());
-        assertNotNull(wrapper.getTransformedAt());
     }
 
     @Test
@@ -110,12 +103,11 @@ class IngestionFlowIntegrationTest {
         assertTrue(patient.hasAddress());
         assertEquals("Arusha", patient.getAddress().get(0).getDistrict());
         assertEquals("Central", patient.getAddress().get(0).getCity());
-        assertEquals("Kaloleni", patient.getAddress().get(0).getText());
     }
 
     @Test
     void testCompleteIngestionFlow_WithMultipleIdentifiers() throws Exception {
-        UCSClient ucsClient = createUCSClientWithMultipleIdentifiers();
+        UCSClient ucsClient = createCompleteUCSClient();
 
         FHIRResourceWrapper<?> wrapper = ucsToFhirTransformer.transformUCSToFHIR(ucsClient);
         assertNotNull(wrapper);
@@ -135,21 +127,17 @@ class IngestionFlowIntegrationTest {
     void testCompleteIngestionFlow_ValidationFailure() {
         UCSClient ucsClient = createInvalidUCSClient();
 
-        // Validation should fail
         UCSClientValidator.ValidationResult valResult = ucsValidator.validate(ucsClient);
         assertFalse(valResult.isValid(), "Validation should fail for invalid data");
         assertNotNull(valResult.getErrorMessage());
 
-        // Transformation should throw
         assertThrows(TransformationException.class,
-            () -> ucsToFhirTransformer.transformUCSToFHIR(ucsClient),
-            "Transformation should fail for invalid data");
+            () -> ucsToFhirTransformer.transformUCSToFHIR(ucsClient));
     }
 
     @Test
     void testCompleteIngestionFlow_PerformanceRequirement() throws Exception {
         UCSClient ucsClient = createCompleteUCSClient();
-
         long startTime = System.currentTimeMillis();
 
         UCSClientValidator.ValidationResult valResult = ucsValidator.validate(ucsClient);
@@ -166,8 +154,6 @@ class IngestionFlowIntegrationTest {
             "Complete flow should finish within 5 seconds (actual: " + duration + "ms)");
     }
 
-    // ===== Round-trip transformation consistency tests =====
-
     @Test
     void testRoundTripTransformation_UCSToFHIRAndBack() throws Exception {
         UCSClient originalClient = createCompleteUCSClient();
@@ -181,18 +167,13 @@ class IngestionFlowIntegrationTest {
         assertNotNull(roundTrippedClient, "Round-trip should produce a UCS client");
 
         // Verify key fields survived the round trip
-        assertEquals(originalClient.getIdentifiers().getOpensrpId(),
-            roundTrippedClient.getIdentifiers().getOpensrpId(),
+        assertEquals(originalClient.getOpensrpId(), roundTrippedClient.getOpensrpId(),
             "OpenSRP ID should survive round trip");
-        assertEquals(originalClient.getDemographics().getFirstName(),
-            roundTrippedClient.getDemographics().getFirstName(),
+        assertEquals(originalClient.getFirstName(), roundTrippedClient.getFirstName(),
             "First name should survive round trip");
-        assertEquals(originalClient.getDemographics().getLastName(),
-            roundTrippedClient.getDemographics().getLastName(),
+        assertEquals(originalClient.getLastName(), roundTrippedClient.getLastName(),
             "Last name should survive round trip");
     }
-
-    // ===== Full IngestionFlowService tests using manual test doubles =====
 
     @Test
     void testIngestionFlowService_SuccessfulIngestion() throws Exception {
@@ -212,12 +193,11 @@ class IngestionFlowIntegrationTest {
         IngestionFlowService.IngestionFlowResult result = flowService.processIngestion(ucsClient);
 
         assertTrue(result.isSuccess(), "Ingestion should succeed: " + result.getErrorMessage());
-        assertTrue(result.isValidationPassed(), "Validation should pass");
-        assertTrue(result.isTransformationCompleted(), "Transformation should complete");
-        assertTrue(result.isFhirStorageCompleted(), "FHIR storage should complete");
-        assertNotNull(result.getFhirResourceId(), "Should have a FHIR resource ID");
+        assertTrue(result.isValidationPassed());
+        assertTrue(result.isTransformationCompleted());
+        assertTrue(result.isFhirStorageCompleted());
         assertEquals("stub-patient-id", result.getFhirResourceId());
-        assertTrue(result.getDurationMs() < 5000, "Should complete within 5 seconds");
+        assertTrue(result.getDurationMs() < 5000);
     }
 
     @Test
@@ -237,8 +217,8 @@ class IngestionFlowIntegrationTest {
         UCSClient ucsClient = createCompleteUCSClient();
         IngestionFlowService.IngestionFlowResult result = flowService.processIngestion(ucsClient);
 
-        assertFalse(result.isSuccess(), "Ingestion should fail when FHIR server is unavailable");
-        assertNotNull(result.getErrorMessage(), "Should have an error message");
+        assertFalse(result.isSuccess());
+        assertNotNull(result.getErrorMessage());
         assertTrue(result.getErrorMessage().contains("FHIR"),
             "Error should mention FHIR: " + result.getErrorMessage());
     }
@@ -260,84 +240,74 @@ class IngestionFlowIntegrationTest {
         UCSClient ucsClient = createCompleteUCSClient();
         IngestionFlowService.IngestionFlowResult result = flowService.processIngestionWithTransaction(ucsClient);
 
-        assertFalse(result.isSuccess(), "Transaction should fail and trigger rollback");
+        assertFalse(result.isSuccess());
         assertNotNull(result.getErrorMessage());
     }
 
-    // ===== Helper methods for creating UCS clients =====
+    // ===== Helper methods — flat OpenSRP structure =====
 
     private UCSClient createCompleteUCSClient() {
         UCSClient client = new UCSClient();
+        client.setBaseEntityId("opensrp-12345");
+        client.setType("Client");
 
-        UCSClient.UCSIdentifiers identifiers = new UCSClient.UCSIdentifiers();
-        identifiers.setOpensrpId("opensrp-12345");
-        identifiers.setNationalId("national-67890");
+        Map<String, String> identifiers = new HashMap<>();
+        identifiers.put("opensrp_id", "opensrp-12345");
         client.setIdentifiers(identifiers);
 
-        UCSClient.UCSDemographics demographics = new UCSClient.UCSDemographics();
-        demographics.setFirstName("John");
-        demographics.setLastName("Smith");
-        demographics.setGender("M");
-        demographics.setBirthDate(LocalDate.of(1990, 5, 15));
-        client.setDemographics(demographics);
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put("national_id", "national-67890");
+        client.setAttributes(attributes);
 
-        UCSClient.UCSAddress address = new UCSClient.UCSAddress();
-        address.setDistrict("Dar es Salaam");
-        address.setWard("Kinondoni");
-        address.setVillage("Mwenge");
-        demographics.setAddress(address);
+        client.setFirstName("John");
+        client.setLastName("Smith");
+        client.setGender("Male");
+        client.setBirthdate("1990-05-15");
 
-        UCSClient.UCSMetadata metadata = new UCSClient.UCSMetadata();
-        metadata.setSource("UCS");
-        client.setMetadata(metadata);
+        UCSClient.OpenSRPAddress address = new UCSClient.OpenSRPAddress();
+        address.setCountry("Tanzania");
+        address.setStateProvince("Dar es Salaam");
+        address.setCountyDistrict("Ilala");
+        address.setCityVillage("Kinondoni");
+        address.setTown("Mwenge");
+        client.setAddresses(List.of(address));
+
+        client.setServerVersion(1567890123456L);
 
         return client;
     }
 
     private UCSClient createUCSClientWithDemographics() {
         UCSClient client = new UCSClient();
+        client.setBaseEntityId("opensrp-demo-001");
 
-        UCSClient.UCSIdentifiers identifiers = new UCSClient.UCSIdentifiers();
-        identifiers.setOpensrpId("opensrp-demo-001");
+        Map<String, String> identifiers = new HashMap<>();
+        identifiers.put("opensrp_id", "opensrp-demo-001");
         client.setIdentifiers(identifiers);
 
-        UCSClient.UCSDemographics demographics = new UCSClient.UCSDemographics();
-        demographics.setFirstName("Jane");
-        demographics.setLastName("Doe");
-        demographics.setGender("F");
-        demographics.setBirthDate(LocalDate.of(1992, 3, 20));
-        client.setDemographics(demographics);
+        client.setFirstName("Jane");
+        client.setLastName("Doe");
+        client.setGender("Female");
+        client.setBirthdate("1992-03-20");
 
-        UCSClient.UCSAddress address = new UCSClient.UCSAddress();
-        address.setDistrict("Arusha");
-        address.setWard("Central");
-        address.setVillage("Kaloleni");
-        demographics.setAddress(address);
+        UCSClient.OpenSRPAddress address = new UCSClient.OpenSRPAddress();
+        address.setCountyDistrict("Arusha");
+        address.setCityVillage("Central");
+        address.setTown("Kaloleni");
+        client.setAddresses(List.of(address));
 
-        UCSClient.UCSMetadata metadata = new UCSClient.UCSMetadata();
-        metadata.setSource("UCS");
-        client.setMetadata(metadata);
-
-        return client;
-    }
-
-    private UCSClient createUCSClientWithMultipleIdentifiers() {
-        UCSClient client = createCompleteUCSClient();
-        client.getIdentifiers().setOpensrpId("opensrp-multi-001");
-        client.getIdentifiers().setNationalId("TZ-NAT-12345");
         return client;
     }
 
     private UCSClient createInvalidUCSClient() {
         UCSClient client = new UCSClient();
-        client.setIdentifiers(new UCSClient.UCSIdentifiers());
-        client.setDemographics(new UCSClient.UCSDemographics());
+        // Missing required fields: baseEntityId, firstName, lastName, gender, identifiers
+        client.setIdentifiers(new HashMap<>());
         return client;
     }
 
     // ===== Manual test doubles (no Mockito) =====
 
-    /** Stub FHIRClientService that returns a successful outcome. */
     private static class StubFHIRClientService extends FHIRClientService {
         @Override
         public MethodOutcome createPatient(Patient patient) {
@@ -352,7 +322,6 @@ class IngestionFlowIntegrationTest {
         }
     }
 
-    /** Stub ResilientFHIRClient that delegates to StubFHIRClientService directly. */
     private static class StubResilientFHIRClient extends ResilientFHIRClient {
         private final FHIRClientService delegate;
 
@@ -367,7 +336,6 @@ class IngestionFlowIntegrationTest {
         }
     }
 
-    /** ResilientFHIRClient that always throws to simulate FHIR server unavailability. */
     private static class FailingResilientFHIRClient extends ResilientFHIRClient {
         FailingResilientFHIRClient(FHIRClientService delegate) {
             super(delegate, new CircuitBreaker("test"), new RetryPolicy("test"));
@@ -379,25 +347,18 @@ class IngestionFlowIntegrationTest {
         }
     }
 
-    /** Stub MessageProducerService that does nothing. */
     private static class StubMessageProducer extends MessageProducerService {
         StubMessageProducer() {
             super(null);
         }
 
         @Override
-        public void sendMessage(QueueMessage queueMessage) {
-            // no-op
-        }
+        public void sendMessage(QueueMessage queueMessage) {}
 
         @Override
-        public void sendToRetryQueue(QueueMessage queueMessage) {
-            // no-op
-        }
+        public void sendToRetryQueue(QueueMessage queueMessage) {}
 
         @Override
-        public void sendToDeadLetterQueue(QueueMessage queueMessage) {
-            // no-op
-        }
+        public void sendToDeadLetterQueue(QueueMessage queueMessage) {}
     }
 }

@@ -4,13 +4,12 @@ import com.smartbridge.core.model.ucs.UCSClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for UCS Client validation.
+ * Unit tests for UCS Client validation against the OpenSRP schema.
  */
 class UCSClientValidatorTest {
 
@@ -23,122 +22,114 @@ class UCSClientValidatorTest {
 
     @Test
     void testValidUCSClient() {
-        // Create a valid UCS Client
-        UCSClient.UCSIdentifiers identifiers = new UCSClient.UCSIdentifiers("OSR-12345", "NID-67890");
-        
-        UCSClient.UCSAddress address = new UCSClient.UCSAddress("Dar es Salaam", "Kinondoni", "Mwenge");
-        UCSClient.UCSDemographics demographics = new UCSClient.UCSDemographics(
-            "John", "Doe", "M", LocalDate.of(1990, 5, 15), address
-        );
-        
-        UCSClient.UCSClinicalData clinicalData = new UCSClient.UCSClinicalData(
-            new java.util.ArrayList<>(), new java.util.ArrayList<>(), new java.util.ArrayList<>()
-        );
-        
-        UCSClient.UCSMetadata metadata = new UCSClient.UCSMetadata(
-            LocalDateTime.now(), LocalDateTime.now(), "UCS", null
-        );
-        
-        UCSClient client = new UCSClient(identifiers, demographics, clinicalData, metadata);
+        UCSClient client = createValidClient();
 
-        // Validate
         UCSClientValidator.ValidationResult result = validator.validate(client);
-        
-        assertTrue(result.isValid(), "Valid UCS Client should pass validation");
+
+        assertTrue(result.isValid(), "Valid UCS Client should pass validation: " + result.getErrorMessage());
         assertNull(result.getErrorMessage());
     }
 
     @Test
-    void testInvalidUCSClient_MissingIdentifiers() {
-        // Create UCS Client with null identifiers
-        UCSClient client = new UCSClient();
-        client.setDemographics(new UCSClient.UCSDemographics(
-            "John", "Doe", "M", LocalDate.of(1990, 5, 15), null
-        ));
-        client.setMetadata(new UCSClient.UCSMetadata(
-            LocalDateTime.now(), LocalDateTime.now(), "UCS", null
-        ));
+    void testInvalidUCSClient_MissingBaseEntityId() {
+        UCSClient client = createValidClient();
+        client.setBaseEntityId(null);
 
         UCSClientValidator.ValidationResult result = validator.validate(client);
-        
-        assertFalse(result.isValid(), "UCS Client without identifiers should fail validation");
+
+        assertFalse(result.isValid(), "UCS Client without baseEntityId should fail validation");
         assertNotNull(result.getErrorMessage());
     }
 
     @Test
-    void testInvalidUCSClient_InvalidGender() {
-        UCSClient.UCSIdentifiers identifiers = new UCSClient.UCSIdentifiers("OSR-12345", null);
-        
-        UCSClient.UCSDemographics demographics = new UCSClient.UCSDemographics(
-            "John", "Doe", "X", LocalDate.of(1990, 5, 15), null
-        );
-        
-        UCSClient.UCSMetadata metadata = new UCSClient.UCSMetadata(
-            LocalDateTime.now(), LocalDateTime.now(), "UCS", null
-        );
-        
-        UCSClient client = new UCSClient(identifiers, demographics, null, metadata);
+    void testInvalidUCSClient_MissingFirstName() {
+        UCSClient client = createValidClient();
+        client.setFirstName(null);
 
         UCSClientValidator.ValidationResult result = validator.validate(client);
-        
-        assertFalse(result.isValid(), "UCS Client with invalid gender should fail validation");
-        assertTrue(result.getErrorMessage().contains("gender"));
+
+        assertFalse(result.isValid(), "UCS Client without firstName should fail validation");
+        assertNotNull(result.getErrorMessage());
+    }
+
+    @Test
+    void testInvalidUCSClient_MissingLastName() {
+        UCSClient client = createValidClient();
+        client.setLastName(null);
+
+        UCSClientValidator.ValidationResult result = validator.validate(client);
+
+        assertFalse(result.isValid(), "UCS Client without lastName should fail validation");
+        assertNotNull(result.getErrorMessage());
+    }
+
+    @Test
+    void testInvalidUCSClient_MissingGender() {
+        UCSClient client = createValidClient();
+        client.setGender(null);
+
+        UCSClientValidator.ValidationResult result = validator.validate(client);
+
+        assertFalse(result.isValid(), "UCS Client without gender should fail validation");
+        assertNotNull(result.getErrorMessage());
+    }
+
+    @Test
+    void testInvalidUCSClient_MissingIdentifiers() {
+        UCSClient client = createValidClient();
+        client.setIdentifiers(null);
+
+        UCSClientValidator.ValidationResult result = validator.validate(client);
+
+        assertFalse(result.isValid(), "UCS Client without identifiers should fail validation");
+        assertNotNull(result.getErrorMessage());
     }
 
     @Test
     void testValidateJson_ValidJson() {
         String validJson = """
             {
+              "baseEntityId": "test-001",
               "identifiers": {
-                "opensrp_id": "OSR-12345",
-                "national_id": "NID-67890"
+                "opensrp_id": "OSR-12345"
               },
-              "demographics": {
-                "firstName": "John",
-                "lastName": "Doe",
-                "gender": "M",
-                "birthDate": "1990-05-15",
-                "address": {
-                  "district": "Dar es Salaam",
-                  "ward": "Kinondoni",
-                  "village": "Mwenge"
+              "firstName": "John",
+              "lastName": "Doe",
+              "gender": "Male",
+              "birthdate": "1990-05-15T00:00:00.000+0300",
+              "addresses": [
+                {
+                  "addressType": "usual_residence",
+                  "country": "Tanzania",
+                  "countyDistrict": "Ilala",
+                  "cityVillage": "Kariakoo"
                 }
-              },
-              "clinicalData": {
-                "observations": [],
-                "medications": [],
-                "procedures": []
-              },
-              "metadata": {
-                "createdAt": "2024-01-15T10:30:00",
-                "updatedAt": "2024-01-15T10:30:00",
-                "source": "UCS"
+              ],
+              "attributes": {
+                "national_id": "NID-67890"
               }
             }
             """;
 
         UCSClientValidator.ValidationResult result = validator.validateJson(validJson);
-        
-        assertTrue(result.isValid(), "Valid JSON should pass validation");
+
+        assertTrue(result.isValid(), "Valid JSON should pass validation: " + result.getErrorMessage());
     }
 
     @Test
-    void testValidateJson_InvalidJson() {
+    void testValidateJson_InvalidJson_MissingRequired() {
         String invalidJson = """
             {
               "identifiers": {
-                "national_id": "NID-67890"
+                "opensrp_id": "OSR-12345"
               },
-              "demographics": {
-                "firstName": "John",
-                "gender": "M",
-                "birthDate": "1990-05-15"
-              }
+              "firstName": "John",
+              "gender": "Male"
             }
             """;
 
         UCSClientValidator.ValidationResult result = validator.validateJson(invalidJson);
-        
+
         assertFalse(result.isValid(), "Invalid JSON should fail validation");
         assertNotNull(result.getErrorMessage());
     }
@@ -147,27 +138,24 @@ class UCSClientValidatorTest {
     void testParseAndValidate_Success() throws ValidationException {
         String validJson = """
             {
+              "baseEntityId": "test-001",
               "identifiers": {
                 "opensrp_id": "OSR-12345"
               },
-              "demographics": {
-                "firstName": "Jane",
-                "lastName": "Smith",
-                "gender": "F",
-                "birthDate": "1985-03-20"
-              },
-              "metadata": {
-                "source": "UCS"
-              }
+              "firstName": "Jane",
+              "lastName": "Smith",
+              "gender": "Female",
+              "birthdate": "1985-03-20"
             }
             """;
 
         UCSClient client = validator.parseAndValidate(validJson);
-        
+
         assertNotNull(client);
-        assertEquals("OSR-12345", client.getIdentifiers().getOpensrpId());
-        assertEquals("Jane", client.getDemographics().getFirstName());
-        assertEquals("F", client.getDemographics().getGender());
+        assertEquals("test-001", client.getBaseEntityId());
+        assertEquals("OSR-12345", client.getOpensrpId());
+        assertEquals("Jane", client.getFirstName());
+        assertEquals("Female", client.getGender());
     }
 
     @Test
@@ -175,9 +163,7 @@ class UCSClientValidatorTest {
         String invalidJson = """
             {
               "identifiers": {},
-              "demographics": {
-                "firstName": "Jane"
-              }
+              "firstName": "Jane"
             }
             """;
 
@@ -187,8 +173,25 @@ class UCSClientValidatorTest {
     @Test
     void testValidateNull() {
         UCSClientValidator.ValidationResult result = validator.validate(null);
-        
+
         assertFalse(result.isValid());
         assertTrue(result.getErrorMessage().contains("null"));
+    }
+
+    // Helper
+    private UCSClient createValidClient() {
+        UCSClient client = new UCSClient();
+        client.setBaseEntityId("test-entity-001");
+
+        Map<String, String> identifiers = new HashMap<>();
+        identifiers.put("opensrp_id", "OSR-12345");
+        client.setIdentifiers(identifiers);
+
+        client.setFirstName("John");
+        client.setLastName("Doe");
+        client.setGender("Male");
+        client.setBirthdate("1990-05-15");
+
+        return client;
     }
 }

@@ -17,7 +17,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -95,7 +98,7 @@ class ReverseSyncFlowIntegrationTest {
         
         // Verify UCS client was created
         verify(ucsApiClient).createClient(argThat(ucsClient ->
-            "opensrp-new-123".equals(ucsClient.getIdentifiers().getOpensrpId())
+            "opensrp-new-123".equals(ucsClient.getOpensrpId())
         ));
         
         // Verify audit logging
@@ -138,9 +141,9 @@ class ReverseSyncFlowIntegrationTest {
         // Arrange - Create FHIR Patient with comprehensive demographic data
         Patient patient = createFHIRPatientWithDemographics("patient-003", "opensrp-demo-789");
         UCSClient transformedClient = createTransformedUCSClient("opensrp-demo-789");
-        transformedClient.getDemographics().setFirstName("Jane");
-        transformedClient.getDemographics().setLastName("Doe");
-        transformedClient.getDemographics().setGender("F");
+        transformedClient.setFirstName("Jane");
+        transformedClient.setLastName("Doe");
+        transformedClient.setGender("F");
         
         when(transformer.transformFHIRToUCS(any()))
             .thenReturn(transformedClient);
@@ -158,11 +161,11 @@ class ReverseSyncFlowIntegrationTest {
         
         // Verify demographic data was correctly transformed
         verify(ucsApiClient).createClient(argThat(ucsClient -> {
-            boolean hasName = "Jane".equals(ucsClient.getDemographics().getFirstName()) &&
-                            "Doe".equals(ucsClient.getDemographics().getLastName());
-            boolean hasGender = "F".equals(ucsClient.getDemographics().getGender());
-            boolean hasBirthDate = ucsClient.getDemographics().getBirthDate() != null;
-            
+            boolean hasName = "Jane".equals(ucsClient.getFirstName()) &&
+                            "Doe".equals(ucsClient.getLastName());
+            boolean hasGender = "F".equals(ucsClient.getGender());
+            boolean hasBirthDate = ucsClient.getBirthdate() != null;
+
             return hasName && hasGender && hasBirthDate;
         }));
     }
@@ -262,7 +265,7 @@ class ReverseSyncFlowIntegrationTest {
         // Arrange - Create FHIR Patient with multiple identifiers
         Patient patient = createFHIRPatientWithMultipleIdentifiers("patient-007");
         UCSClient transformedClient = createTransformedUCSClient("opensrp-multi-444");
-        transformedClient.getIdentifiers().setNationalId("national-multi-555");
+        transformedClient.getIdentifiers().put("national_id", "national-multi-555");
         
         when(transformer.transformFHIRToUCS(any()))
             .thenReturn(transformedClient);
@@ -281,10 +284,10 @@ class ReverseSyncFlowIntegrationTest {
         // Verify all identifiers were mapped
         verify(ucsApiClient).createClient(argThat(ucsClient -> {
             boolean hasOpensrpId = "opensrp-multi-444".equals(
-                ucsClient.getIdentifiers().getOpensrpId());
+                ucsClient.getOpensrpId());
             boolean hasNationalId = "national-multi-555".equals(
-                ucsClient.getIdentifiers().getNationalId());
-            
+                ucsClient.getNationalId());
+
             return hasOpensrpId && hasNationalId;
         }));
     }
@@ -330,11 +333,12 @@ class ReverseSyncFlowIntegrationTest {
         // Arrange - Create FHIR Patient with address
         Patient patient = createFHIRPatientWithAddress("patient-009", "opensrp-addr-777");
         UCSClient transformedClient = createTransformedUCSClient("opensrp-addr-777");
-        UCSClient.UCSAddress address = new UCSClient.UCSAddress();
-        address.setDistrict("Dar es Salaam");
-        address.setWard("Kinondoni");
-        address.setVillage("Mwenge");
-        transformedClient.getDemographics().setAddress(address);
+        UCSClient.OpenSRPAddress address = new UCSClient.OpenSRPAddress();
+        address.setCountyDistrict("Dar es Salaam");
+        address.setCityVillage("Kinondoni");
+        address.setTown("Mwenge");
+        transformedClient.setAddresses(new ArrayList<>());
+        transformedClient.getAddresses().add(address);
         
         when(transformer.transformFHIRToUCS(any()))
             .thenReturn(transformedClient);
@@ -352,7 +356,7 @@ class ReverseSyncFlowIntegrationTest {
         
         // Verify address was transformed
         verify(ucsApiClient).createClient(argThat(ucsClient ->
-            ucsClient.getDemographics().getAddress() != null
+            ucsClient.getAddresses() != null && !ucsClient.getAddresses().isEmpty()
         ));
     }
 
@@ -460,39 +464,33 @@ class ReverseSyncFlowIntegrationTest {
 
     private UCSClient createExistingUCSClient(String opensrpId) {
         UCSClient client = new UCSClient();
-        
-        UCSClient.UCSIdentifiers identifiers = new UCSClient.UCSIdentifiers();
-        identifiers.setOpensrpId(opensrpId);
+        client.setBaseEntityId("existing-entity-001");
+
+        Map<String, String> identifiers = new HashMap<>();
+        identifiers.put("opensrp_id", opensrpId);
         client.setIdentifiers(identifiers);
-        
-        UCSClient.UCSDemographics demographics = new UCSClient.UCSDemographics();
-        demographics.setFirstName("Existing");
-        demographics.setLastName("Client");
-        demographics.setGender("M");
-        demographics.setBirthDate(LocalDate.of(1980, 1, 1));
-        client.setDemographics(demographics);
-        
+
+        client.setFirstName("Existing");
+        client.setLastName("Client");
+        client.setGender("M");
+        client.setBirthdate("1980-01-01");
+
         return client;
     }
 
     private UCSClient createTransformedUCSClient(String opensrpId) {
         UCSClient client = new UCSClient();
-        
-        UCSClient.UCSIdentifiers identifiers = new UCSClient.UCSIdentifiers();
-        identifiers.setOpensrpId(opensrpId);
+        client.setBaseEntityId("transformed-entity-001");
+
+        Map<String, String> identifiers = new HashMap<>();
+        identifiers.put("opensrp_id", opensrpId);
         client.setIdentifiers(identifiers);
-        
-        UCSClient.UCSDemographics demographics = new UCSClient.UCSDemographics();
-        demographics.setFirstName("Transformed");
-        demographics.setLastName("Client");
-        demographics.setGender("M");
-        demographics.setBirthDate(LocalDate.of(1990, 1, 1));
-        client.setDemographics(demographics);
-        
-        UCSClient.UCSMetadata metadata = new UCSClient.UCSMetadata();
-        metadata.setSource("FHIR");
-        client.setMetadata(metadata);
-        
+
+        client.setFirstName("Transformed");
+        client.setLastName("Client");
+        client.setGender("M");
+        client.setBirthdate("1990-01-01");
+
         return client;
     }
 }

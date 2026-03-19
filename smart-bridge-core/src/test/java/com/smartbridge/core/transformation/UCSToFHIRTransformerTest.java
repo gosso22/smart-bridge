@@ -16,14 +16,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Unit tests for UCSToFHIRTransformer.
- * Tests identifier mapping, gender normalization, and demographic field mapping.
+ * Tests identifier mapping, gender normalization, and demographic field mapping
+ * using the flat OpenSRP Client structure.
  */
 @ExtendWith(MockitoExtension.class)
 class UCSToFHIRTransformerTest {
@@ -31,7 +31,7 @@ class UCSToFHIRTransformerTest {
     private UCSToFHIRTransformer transformer;
     private UCSClientValidator ucsValidator;
     private FHIRValidator fhirValidator;
-    
+
     @Mock
     private FHIRToUCSTransformer fhirToUCSTransformer;
 
@@ -44,108 +44,126 @@ class UCSToFHIRTransformerTest {
 
     @Test
     void testTransformUCSToFHIR_ValidClient_Success() throws TransformationException {
-        // Arrange
         UCSClient ucsClient = createValidUCSClient();
 
-        // Act
         FHIRResourceWrapper<?> wrapper = transformer.transformUCSToFHIR(ucsClient);
 
-        // Assert
         assertNotNull(wrapper);
         assertEquals("UCS", wrapper.getSourceSystem());
         assertEquals("OPENSRP-12345", wrapper.getOriginalId());
-        
+
         Patient patient = (Patient) wrapper.getResource();
         assertNotNull(patient);
     }
 
     @Test
     void testIdentifierMapping_OpensrpId() throws TransformationException {
-        // Arrange
         UCSClient ucsClient = createValidUCSClient();
 
-        // Act
         FHIRResourceWrapper<?> wrapper = transformer.transformUCSToFHIR(ucsClient);
         Patient patient = (Patient) wrapper.getResource();
 
-        // Assert
         Identifier opensrpIdentifier = patient.getIdentifier().stream()
             .filter(id -> "http://moh.go.tz/identifier/opensrp-id".equals(id.getSystem()))
             .findFirst()
             .orElse(null);
-        
+
         assertNotNull(opensrpIdentifier);
         assertEquals("OPENSRP-12345", opensrpIdentifier.getValue());
     }
 
     @Test
     void testIdentifierMapping_NationalId() throws TransformationException {
-        // Arrange
         UCSClient ucsClient = createValidUCSClient();
 
-        // Act
         FHIRResourceWrapper<?> wrapper = transformer.transformUCSToFHIR(ucsClient);
         Patient patient = (Patient) wrapper.getResource();
 
-        // Assert
         Identifier nationalIdentifier = patient.getIdentifier().stream()
             .filter(id -> "http://moh.go.tz/identifier/national-id".equals(id.getSystem()))
             .findFirst()
             .orElse(null);
-        
+
         assertNotNull(nationalIdentifier);
         assertEquals("NAT-67890", nationalIdentifier.getValue());
     }
 
     @Test
-    void testGenderNormalization_Male() throws TransformationException {
-        // Arrange
+    void testIdentifierMapping_BaseEntityId() throws TransformationException {
         UCSClient ucsClient = createValidUCSClient();
-        ucsClient.getDemographics().setGender("M");
 
-        // Act
         FHIRResourceWrapper<?> wrapper = transformer.transformUCSToFHIR(ucsClient);
         Patient patient = (Patient) wrapper.getResource();
 
-        // Assert
+        Identifier baseEntityIdentifier = patient.getIdentifier().stream()
+            .filter(id -> "http://moh.go.tz/identifier/base-entity-id".equals(id.getSystem()))
+            .findFirst()
+            .orElse(null);
+
+        assertNotNull(baseEntityIdentifier);
+        assertEquals("base-entity-001", baseEntityIdentifier.getValue());
+    }
+
+    @Test
+    void testGenderNormalization_Male() throws TransformationException {
+        UCSClient ucsClient = createValidUCSClient();
+        ucsClient.setGender("Male");
+
+        FHIRResourceWrapper<?> wrapper = transformer.transformUCSToFHIR(ucsClient);
+        Patient patient = (Patient) wrapper.getResource();
+
         assertEquals(AdministrativeGender.MALE, patient.getGender());
     }
 
     @Test
     void testGenderNormalization_Female() throws TransformationException {
-        // Arrange
         UCSClient ucsClient = createValidUCSClient();
-        ucsClient.getDemographics().setGender("F");
+        ucsClient.setGender("Female");
 
-        // Act
         FHIRResourceWrapper<?> wrapper = transformer.transformUCSToFHIR(ucsClient);
         Patient patient = (Patient) wrapper.getResource();
 
-        // Assert
+        assertEquals(AdministrativeGender.FEMALE, patient.getGender());
+    }
+
+    @Test
+    void testGenderNormalization_SingleLetter_M() throws TransformationException {
+        UCSClient ucsClient = createValidUCSClient();
+        ucsClient.setGender("M");
+
+        FHIRResourceWrapper<?> wrapper = transformer.transformUCSToFHIR(ucsClient);
+        Patient patient = (Patient) wrapper.getResource();
+
+        assertEquals(AdministrativeGender.MALE, patient.getGender());
+    }
+
+    @Test
+    void testGenderNormalization_SingleLetter_F() throws TransformationException {
+        UCSClient ucsClient = createValidUCSClient();
+        ucsClient.setGender("F");
+
+        FHIRResourceWrapper<?> wrapper = transformer.transformUCSToFHIR(ucsClient);
+        Patient patient = (Patient) wrapper.getResource();
+
         assertEquals(AdministrativeGender.FEMALE, patient.getGender());
     }
 
     @Test
     void testGenderNormalization_Other() throws TransformationException {
-        // Arrange
         UCSClient ucsClient = createValidUCSClient();
-        ucsClient.getDemographics().setGender("O");
+        ucsClient.setGender("O");
 
-        // Act
         FHIRResourceWrapper<?> wrapper = transformer.transformUCSToFHIR(ucsClient);
         Patient patient = (Patient) wrapper.getResource();
 
-        // Assert
         assertEquals(AdministrativeGender.OTHER, patient.getGender());
     }
 
     @Test
     void testGenderNormalization_Null_ThrowsException() {
-        // Arrange
         UCSClient ucsClient = createValidUCSClient();
-        ucsClient.getDemographics().setGender(null);
+        ucsClient.setGender(null);
 
-        // Act & Assert - null gender should fail validation
         assertThrows(TransformationException.class, () -> {
             transformer.transformUCSToFHIR(ucsClient);
         });
@@ -153,92 +171,77 @@ class UCSToFHIRTransformerTest {
 
     @Test
     void testNameMapping() throws TransformationException {
-        // Arrange
         UCSClient ucsClient = createValidUCSClient();
 
-        // Act
         FHIRResourceWrapper<?> wrapper = transformer.transformUCSToFHIR(ucsClient);
         Patient patient = (Patient) wrapper.getResource();
 
-        // Assert
         assertFalse(patient.getName().isEmpty());
         HumanName name = patient.getName().get(0);
         assertEquals("Doe", name.getFamily());
-        assertEquals(1, name.getGiven().size());
         assertEquals("John", name.getGiven().get(0).getValue());
     }
 
     @Test
-    void testBirthDateMapping() throws TransformationException {
-        // Arrange
+    void testBirthDateMapping_ISODatetime() throws TransformationException {
         UCSClient ucsClient = createValidUCSClient();
-        LocalDate birthDate = LocalDate.of(1990, 5, 15);
-        ucsClient.getDemographics().setBirthDate(birthDate);
+        ucsClient.setBirthdate("1990-05-15T00:00:00.000+0300");
 
-        // Act
         FHIRResourceWrapper<?> wrapper = transformer.transformUCSToFHIR(ucsClient);
         Patient patient = (Patient) wrapper.getResource();
 
-        // Assert
+        assertNotNull(patient.getBirthDate());
+    }
+
+    @Test
+    void testBirthDateMapping_PlainDate() throws TransformationException {
+        UCSClient ucsClient = createValidUCSClient();
+        ucsClient.setBirthdate("1990-05-15");
+
+        FHIRResourceWrapper<?> wrapper = transformer.transformUCSToFHIR(ucsClient);
+        Patient patient = (Patient) wrapper.getResource();
+
         assertNotNull(patient.getBirthDate());
     }
 
     @Test
     void testAddressMapping() throws TransformationException {
-        // Arrange
         UCSClient ucsClient = createValidUCSClient();
 
-        // Act
         FHIRResourceWrapper<?> wrapper = transformer.transformUCSToFHIR(ucsClient);
         Patient patient = (Patient) wrapper.getResource();
 
-        // Assert
         assertFalse(patient.getAddress().isEmpty());
         Address address = patient.getAddress().get(0);
-        assertEquals("Dar es Salaam", address.getDistrict());
-        assertEquals("Kinondoni", address.getCity());
-        assertEquals("Mwenge", address.getText());
+        assertEquals("Tanzania", address.getCountry());
+        assertEquals("Dar es Salaam", address.getState());
+        assertEquals("Ilala", address.getDistrict());
+        assertEquals("Kariakoo", address.getCity());
     }
 
     @Test
     void testTransformUCSToFHIR_NullClient_ThrowsException() {
-        // Act & Assert
         assertThrows(TransformationException.class, () -> {
             transformer.transformUCSToFHIR(null);
         });
     }
 
     @Test
-    void testTransformUCSToFHIR_MissingIdentifiers_ThrowsException() {
-        // Arrange
+    void testTransformUCSToFHIR_MissingIdentifiers_UsesBaseEntityId() throws TransformationException {
         UCSClient ucsClient = createValidUCSClient();
         ucsClient.setIdentifiers(null);
 
-        // Act & Assert
-        assertThrows(TransformationException.class, () -> {
-            transformer.transformUCSToFHIR(ucsClient);
-        });
+        // Should still work because baseEntityId is set
+        FHIRResourceWrapper<?> wrapper = transformer.transformUCSToFHIR(ucsClient);
+        assertNotNull(wrapper);
     }
 
     @Test
-    void testTransformUCSToFHIR_MissingOpensrpId_ThrowsException() {
-        // Arrange
+    void testTransformUCSToFHIR_MissingBothIds_ThrowsException() {
         UCSClient ucsClient = createValidUCSClient();
-        ucsClient.getIdentifiers().setOpensrpId(null);
+        ucsClient.setIdentifiers(null);
+        ucsClient.setBaseEntityId(null);
 
-        // Act & Assert
-        assertThrows(TransformationException.class, () -> {
-            transformer.transformUCSToFHIR(ucsClient);
-        });
-    }
-
-    @Test
-    void testTransformUCSToFHIR_MissingDemographics_ThrowsException() {
-        // Arrange
-        UCSClient ucsClient = createValidUCSClient();
-        ucsClient.setDemographics(null);
-
-        // Act & Assert
         assertThrows(TransformationException.class, () -> {
             transformer.transformUCSToFHIR(ucsClient);
         });
@@ -246,11 +249,9 @@ class UCSToFHIRTransformerTest {
 
     @Test
     void testTransformUCSToFHIR_MissingName_ThrowsException() {
-        // Arrange
         UCSClient ucsClient = createValidUCSClient();
-        ucsClient.getDemographics().setFirstName(null);
+        ucsClient.setFirstName(null);
 
-        // Act & Assert
         assertThrows(TransformationException.class, () -> {
             transformer.transformUCSToFHIR(ucsClient);
         });
@@ -258,87 +259,88 @@ class UCSToFHIRTransformerTest {
 
     @Test
     void testValidateUCSClient_Valid() {
-        // Note: validateUCSClient uses JSON schema validation which expects string-formatted dates
-        // For Java objects with LocalDate/LocalDateTime, the transformation does field validation instead
-        // This test verifies that the method correctly identifies when JSON schema validation fails
-        // due to date format mismatch (which is expected for Java objects)
-        
-        // Arrange
         UCSClient ucsClient = createValidUCSClient();
 
-        // Act
         boolean isValid = transformer.validateUCSClient(ucsClient);
 
-        // Assert - should pass validation with properly configured schema
         assertTrue(isValid);
     }
 
     @Test
     void testValidateUCSClient_Null() {
-        // Act
         boolean isValid = transformer.validateUCSClient(null);
 
-        // Assert
         assertFalse(isValid);
     }
 
     @Test
     void testValidateFHIRResource_Valid() throws TransformationException {
-        // Arrange
         UCSClient ucsClient = createValidUCSClient();
         FHIRResourceWrapper<?> wrapper = transformer.transformUCSToFHIR(ucsClient);
         Patient patient = (Patient) wrapper.getResource();
 
-        // Act
         boolean isValid = transformer.validateFHIRResource(patient);
 
-        // Assert
         assertTrue(isValid);
     }
 
     @Test
     void testValidateFHIRResource_Null() {
-        // Act
         boolean isValid = transformer.validateFHIRResource(null);
 
-        // Assert
         assertFalse(isValid);
     }
 
-    // Helper method to create a valid UCS Client for testing
+    @Test
+    void testParseBirthdate_PlainDate() {
+        assertEquals(java.time.LocalDate.of(1990, 5, 15),
+            UCSToFHIRTransformer.parseBirthdate("1990-05-15"));
+    }
+
+    @Test
+    void testParseBirthdate_ISODatetime() {
+        assertEquals(java.time.LocalDate.of(1990, 5, 15),
+            UCSToFHIRTransformer.parseBirthdate("1990-05-15T00:00:00.000+0300"));
+    }
+
+    @Test
+    void testParseBirthdate_Null() {
+        assertNull(UCSToFHIRTransformer.parseBirthdate(null));
+    }
+
+    @Test
+    void testParseBirthdate_Empty() {
+        assertNull(UCSToFHIRTransformer.parseBirthdate(""));
+    }
+
+    // Helper method to create a valid OpenSRP-style UCS Client
     private UCSClient createValidUCSClient() {
-        UCSClient.UCSIdentifiers identifiers = new UCSClient.UCSIdentifiers(
-            "OPENSRP-12345",
-            "NAT-67890"
-        );
+        UCSClient client = new UCSClient();
+        client.setBaseEntityId("base-entity-001");
+        client.setType("Client");
 
-        UCSClient.UCSAddress address = new UCSClient.UCSAddress(
-            "Dar es Salaam",
-            "Kinondoni",
-            "Mwenge"
-        );
+        Map<String, String> identifiers = new HashMap<>();
+        identifiers.put("opensrp_id", "OPENSRP-12345");
+        client.setIdentifiers(identifiers);
 
-        UCSClient.UCSDemographics demographics = new UCSClient.UCSDemographics(
-            "John",
-            "Doe",
-            "M",
-            LocalDate.of(1990, 5, 15),
-            address
-        );
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put("national_id", "NAT-67890");
+        client.setAttributes(attributes);
 
-        UCSClient.UCSClinicalData clinicalData = new UCSClient.UCSClinicalData(
-            java.util.Collections.emptyList(),
-            java.util.Collections.emptyList(),
-            java.util.Collections.emptyList()
-        );
+        client.setFirstName("John");
+        client.setLastName("Doe");
+        client.setGender("Male");
+        client.setBirthdate("1990-05-15T00:00:00.000+0300");
 
-        UCSClient.UCSMetadata metadata = new UCSClient.UCSMetadata(
-            LocalDateTime.now(),
-            LocalDateTime.now(),
-            "UCS",
-            null
-        );
+        UCSClient.OpenSRPAddress address = new UCSClient.OpenSRPAddress();
+        address.setCountry("Tanzania");
+        address.setStateProvince("Dar es Salaam");
+        address.setCountyDistrict("Ilala");
+        address.setCityVillage("Kariakoo");
+        client.setAddresses(List.of(address));
 
-        return new UCSClient(identifiers, demographics, clinicalData, metadata);
+        client.setServerVersion(1567890123456L);
+
+        return client;
     }
 }

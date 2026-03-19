@@ -26,7 +26,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Executor;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -115,13 +117,13 @@ class CrossSystemConsistencyTest {
         UCSClient resultClient = ucsClientCaptor.getValue();
 
         // Assert - Verify identifier consistency
-        assertEquals(originalClient.getIdentifiers().getOpensrpId(),
-            resultClient.getIdentifiers().getOpensrpId(),
+        assertEquals(originalClient.getOpensrpId(),
+            resultClient.getOpensrpId(),
             "OpenSRP ID should be consistent");
 
-        if (originalClient.getIdentifiers().getNationalId() != null) {
-            assertEquals(originalClient.getIdentifiers().getNationalId(),
-                resultClient.getIdentifiers().getNationalId(),
+        if (originalClient.getNationalId() != null) {
+            assertEquals(originalClient.getNationalId(),
+                resultClient.getNationalId(),
                 "National ID should be consistent");
         }
     }
@@ -149,14 +151,16 @@ class CrossSystemConsistencyTest {
         verify(ucsApiClient).createClient(ucsClientCaptor.capture());
         UCSClient resultClient = ucsClientCaptor.getValue();
 
-        assertEquals(originalClient.getDemographics().getFirstName(),
-            resultClient.getDemographics().getFirstName(), "First name should be consistent");
-        assertEquals(originalClient.getDemographics().getLastName(),
-            resultClient.getDemographics().getLastName(), "Last name should be consistent");
-        assertEquals(originalClient.getDemographics().getGender(),
-            resultClient.getDemographics().getGender(), "Gender should be consistent");
-        assertEquals(originalClient.getDemographics().getBirthDate(),
-            resultClient.getDemographics().getBirthDate(), "Birth date should be consistent");
+        assertEquals(originalClient.getFirstName(),
+            resultClient.getFirstName(), "First name should be consistent");
+        assertEquals(originalClient.getLastName(),
+            resultClient.getLastName(), "Last name should be consistent");
+        // Gender is normalized during round-trip: "F" -> FHIR female -> "Female"
+        assertTrue(isSameGender(originalClient.getGender(), resultClient.getGender()),
+            "Gender should be consistent: original=" + originalClient.getGender() +
+            ", result=" + resultClient.getGender());
+        assertEquals(originalClient.getBirthdate(),
+            resultClient.getBirthdate(), "Birth date should be consistent");
     }
 
     @Test
@@ -168,7 +172,7 @@ class CrossSystemConsistencyTest {
             CapturingResilientFHIRClient.lastPatient = null;
 
             UCSClient originalClient = createUCSClient("opensrp-gender-" + gender);
-            originalClient.getDemographics().setGender(gender);
+            originalClient.setGender(gender);
 
             IngestionFlowService.IngestionFlowResult ingestionResult =
                 ingestionFlowService.processIngestion(originalClient);
@@ -190,8 +194,9 @@ class CrossSystemConsistencyTest {
             verify(ucsApiClient, atLeastOnce()).createClient(ucsClientCaptor.capture());
             UCSClient resultClient = ucsClientCaptor.getValue();
 
-            assertEquals(gender, resultClient.getDemographics().getGender(),
-                "Gender " + gender + " should be consistent after round-trip");
+            assertTrue(isSameGender(gender, resultClient.getGender()),
+                "Gender " + gender + " should be consistent after round-trip, got: " +
+                resultClient.getGender());
         }
     }
 
@@ -219,12 +224,11 @@ class CrossSystemConsistencyTest {
         UCSClient resultClient = ucsClientCaptor.getValue();
 
         assertNotNull(resultClient.getIdentifiers(), "Identifiers should not be null");
-        assertNotNull(resultClient.getDemographics(), "Demographics should not be null");
-        assertNotNull(resultClient.getIdentifiers().getOpensrpId(), "OpenSRP ID should not be null");
-        assertNotNull(resultClient.getDemographics().getFirstName(), "First name should not be null");
-        assertNotNull(resultClient.getDemographics().getLastName(), "Last name should not be null");
-        assertNotNull(resultClient.getDemographics().getGender(), "Gender should not be null");
-        assertNotNull(resultClient.getDemographics().getBirthDate(), "Birth date should not be null");
+        assertNotNull(resultClient.getOpensrpId(), "OpenSRP ID should not be null");
+        assertNotNull(resultClient.getFirstName(), "First name should not be null");
+        assertNotNull(resultClient.getLastName(), "Last name should not be null");
+        assertNotNull(resultClient.getGender(), "Gender should not be null");
+        assertNotNull(resultClient.getBirthdate(), "Birth date should not be null");
     }
 
     @Test
@@ -256,46 +260,65 @@ class CrossSystemConsistencyTest {
 
     // ===== Helper methods =====
 
+    /**
+     * Compare genders semantically: "M" == "Male", "F" == "Female", "O" == "Other".
+     */
+    private boolean isSameGender(String a, String b) {
+        if (a == null || b == null) return a == b;
+        return normalizeGenderForComparison(a).equals(normalizeGenderForComparison(b));
+    }
+
+    private String normalizeGenderForComparison(String gender) {
+        if (gender == null) return "";
+        switch (gender.toUpperCase()) {
+            case "M": case "MALE": return "MALE";
+            case "F": case "FEMALE": return "FEMALE";
+            case "O": case "OTHER": return "OTHER";
+            default: return gender.toUpperCase();
+        }
+    }
+
     private UCSClient createUCSClient(String opensrpId) {
         UCSClient client = new UCSClient();
-        UCSClient.UCSIdentifiers identifiers = new UCSClient.UCSIdentifiers();
-        identifiers.setOpensrpId(opensrpId);
-        identifiers.setNationalId("national-" + opensrpId);
+        client.setBaseEntityId("entity-" + opensrpId);
+
+        Map<String, String> identifiers = new HashMap<>();
+        identifiers.put("opensrp_id", opensrpId);
         client.setIdentifiers(identifiers);
 
-        UCSClient.UCSDemographics demographics = new UCSClient.UCSDemographics();
-        demographics.setFirstName("Test");
-        demographics.setLastName("User");
-        demographics.setGender("M");
-        demographics.setBirthDate(LocalDate.of(1990, 1, 1));
-        client.setDemographics(demographics);
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put("national_id", "national-" + opensrpId);
+        client.setAttributes(attributes);
 
-        UCSClient.UCSMetadata metadata = new UCSClient.UCSMetadata();
-        metadata.setSource("UCS");
-        client.setMetadata(metadata);
+        client.setFirstName("Test");
+        client.setLastName("User");
+        client.setGender("M");
+        client.setBirthdate("1990-01-01");
+
         return client;
     }
 
     private UCSClient createUCSClientWithDemographics(String opensrpId) {
         UCSClient client = createUCSClient(opensrpId);
-        client.getDemographics().setFirstName("Jane");
-        client.getDemographics().setLastName("Doe");
-        client.getDemographics().setGender("F");
-        client.getDemographics().setBirthDate(LocalDate.of(1992, 3, 20));
+        client.setFirstName("Jane");
+        client.setLastName("Doe");
+        client.setGender("F");
+        client.setBirthdate("1992-03-20");
         return client;
     }
 
     private UCSClient createCompleteUCSClient(String opensrpId) {
         UCSClient client = createUCSClient(opensrpId);
-        client.getDemographics().setFirstName("Complete");
-        client.getDemographics().setLastName("Client");
-        client.getDemographics().setGender("M");
-        client.getDemographics().setBirthDate(LocalDate.of(1985, 6, 15));
-        UCSClient.UCSAddress address = new UCSClient.UCSAddress();
-        address.setDistrict("Dar es Salaam");
-        address.setWard("Kinondoni");
-        address.setVillage("Mwenge");
-        client.getDemographics().setAddress(address);
+        client.setFirstName("Complete");
+        client.setLastName("Client");
+        client.setGender("M");
+        client.setBirthdate("1985-06-15");
+        UCSClient.OpenSRPAddress address = new UCSClient.OpenSRPAddress();
+        address.setCountyDistrict("Dar es Salaam");
+        address.setCityVillage("Kinondoni");
+        address.setTown("Mwenge");
+        client.setAddresses(new ArrayList<>());
+        client.getAddresses().add(address);
         return client;
     }
 
