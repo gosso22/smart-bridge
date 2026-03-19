@@ -5,9 +5,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import javax.net.ssl.*;
+import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -20,14 +23,17 @@ public class OpenHIMClientImpl implements OpenHIMClient {
 
     private static final Logger logger = LoggerFactory.getLogger(OpenHIMClientImpl.class);
 
-    @Value("${openhim.core.url:http://localhost:8080}")
+    @Value("${smartbridge.openhim.core-url:${openhim.core.url:http://localhost:8080}}")
     private String openHIMCoreUrl;
 
-    @Value("${openhim.core.username:root@openhim.org}")
+    @Value("${smartbridge.openhim.api-username:${openhim.core.username:root@openhim.org}}")
     private String openHIMUsername;
 
-    @Value("${openhim.core.password:openhim-password}")
+    @Value("${smartbridge.openhim.api-password:${openhim.core.password:SmartBridge@2026}}")
     private String openHIMPassword;
+
+    @Value("${smartbridge.openhim.trust-self-signed:${openhim.trust-self-signed:true}}")
+    private boolean trustSelfSigned;
 
     @Value("${openhim.enabled:false}")
     private boolean openHIMEnabled;
@@ -36,8 +42,27 @@ public class OpenHIMClientImpl implements OpenHIMClient {
     private final ObjectMapper objectMapper;
 
     public OpenHIMClientImpl() {
-        this.restTemplate = new RestTemplate();
+        this.restTemplate = createRestTemplate();
         this.objectMapper = new ObjectMapper();
+    }
+
+    private RestTemplate createRestTemplate() {
+        try {
+            TrustManager[] trustAll = new TrustManager[]{
+                new X509TrustManager() {
+                    public X509Certificate[] getAcceptedIssuers() { return null; }
+                    public void checkClientTrusted(X509Certificate[] certs, String authType) {}
+                    public void checkServerTrusted(X509Certificate[] certs, String authType) {}
+                }
+            };
+            SSLContext sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(null, trustAll, new java.security.SecureRandom());
+            HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
+            HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
+        } catch (Exception e) {
+            logger.warn("Could not configure SSL trust: {}", e.getMessage());
+        }
+        return new RestTemplate();
     }
 
     @Override

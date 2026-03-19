@@ -391,7 +391,7 @@ public class ReverseSyncFlowService {
         logger.debug("Storing UCS client in UCS system");
         
         try {
-            String opensrpId = ucsClient.getIdentifiers().getOpensrpId();
+            String opensrpId = ucsClient.getOpensrpId() != null ? ucsClient.getOpensrpId() : ucsClient.getBaseEntityId();
             
             // Try to get existing client first
             UCSClient existingClient = null;
@@ -457,7 +457,7 @@ public class ReverseSyncFlowService {
                 .findFirst()
                 .orElse(null);
             
-            String ucsOpensrpId = ucsClient.getIdentifiers().getOpensrpId();
+            String ucsOpensrpId = ucsClient.getOpensrpId() != null ? ucsClient.getOpensrpId() : ucsClient.getBaseEntityId();
             
             if (!Objects.equals(fhirOpensrpId, ucsOpensrpId)) {
                 inconsistencies.add("OpenSRP ID mismatch: FHIR=" + fhirOpensrpId + 
@@ -467,7 +467,7 @@ public class ReverseSyncFlowService {
             // Verify name
             if (patient.hasName() && !patient.getName().isEmpty()) {
                 String fhirFirstName = patient.getName().get(0).getGiven().get(0).getValue();
-                String ucsFirstName = ucsClient.getDemographics().getFirstName();
+                String ucsFirstName = ucsClient.getFirstName();
                 
                 if (!Objects.equals(fhirFirstName, ucsFirstName)) {
                     inconsistencies.add("First name mismatch: FHIR=" + fhirFirstName + 
