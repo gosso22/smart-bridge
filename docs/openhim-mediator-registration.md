@@ -1,44 +1,93 @@
-# OpenHIM Mediator Registration Guide
+# OpenHIM Mediator Registration Guide (v8.5.1)
 
 ## Overview
 
-Smart Bridge uses OpenHIM as the central routing and transformation engine. Each mediator (UCS, FHIR) must be registered with OpenHIM Core before it can participate in data flows. Registration is handled automatically on application startup by `MediatorRegistrationService`, but manual steps are required for initial OpenHIM Core setup.
+Smart Bridge uses OpenHIM v8.5.1 as the central routing and transformation engine. This guide covers the updated UI and configuration approach for OpenHIM v8.5.1, which differs significantly from earlier versions.
 
 ## Prerequisites
 
-- OpenHIM Core 8.x running and accessible
-- OpenHIM Console configured for administration
+- OpenHIM Core v8.5.1 running and accessible
+- OpenHIM Console v1.15.0 configured for administration
+- MongoDB 6.0 for OpenHIM data storage
 - Network connectivity between Smart Bridge and OpenHIM Core
-- Admin credentials for OpenHIM Core API
+- Admin credentials (default: root@openhim.org / openhim-password)
 
 ## OpenHIM Core Setup
 
-### 1. Install and Start OpenHIM Core
+### 1. Docker Compose Setup (Recommended)
+
+The project includes a `docker-compose.yml` with OpenHIM v8.5.1:
 
 ```bash
-# Docker-based setup (recommended)
-docker run -d --name openhim-core \
-  -p 8080:8080 -p 5000:5000 -p 5001:5001 \
-  -e mongo_url=mongodb://mongo/openhim \
-  -e mongo_atnaUrl=mongodb://mongo/openhim \
-  jembi/openhim-core:latest
+# Start all services
+docker-compose up -d
 
-# Verify it's running
-curl -k https://localhost:8080/heartbeat
+# Check OpenHIM Core status
+docker logs smart-bridge-openhim-core
+
+# Verify heartbeat (note: may return empty initially)
+curl http://localhost:8080/heartbeat
 ```
 
-### 2. Configure OpenHIM Console
+### 2. Access OpenHIM Console
 
-Access the OpenHIM Console at `https://localhost:9000` and log in with default credentials. Change the default password immediately.
+1. Navigate to `http://localhost:9000`
+2. Login with default credentials:
+   - Username: `root@openhim.org`
+   - Password: `openhim-password`
+3. Change the default password immediately in production
 
-### 3. Create API Client for Smart Bridge
+### 3. Create a Channel for Smart Bridge
 
-In OpenHIM Console:
-1. Navigate to Clients > Add Client
-2. Set Client ID: `smart-bridge`
-3. Set Client Name: `Smart Bridge Interoperability System`
-4. Configure authentication (mutual TLS or basic auth)
-5. Assign appropriate roles: `smart-bridge-mediator`
+In OpenHIM Console v1.15.0, the UI has changed significantly:
+
+#### Navigate to Channels
+1. Click "Channels" in the left sidebar
+2. Click "+ Channel" to create a new channel
+
+#### Basic Info Tab
+- **Channel Name**: `Smart Bridge UCS to FHIR`
+- **Channel Type**: HTTP
+- **Status**: Enabled
+
+#### Request Matching Tab
+- **URL Pattern**: `/smart-bridge/api/sync/ingest`
+- **Allowed Methods**: POST, PUT
+- **Authentication**: None (or configure as needed)
+- **Whitelist**: Add allowed client IPs or leave empty for development
+
+#### Routes Tab (Updated UI)
+
+Click "Set Route" and configure:
+
+- **Route Name**: `Smart Bridge Mediator`
+- **Route Type**: HTTP (selected by default)
+- **Route Secured**: No (for development) / Yes (for production with TLS)
+- **Primary Route**: Yes (toggle to green)
+- **Status**: Enabled (toggle to green)
+- **Host**: `host.docker.internal` (if Smart Bridge runs on host) or `smart-bridge-app` (if containerized)
+- **Port**: `8083` (Smart Bridge application port)
+- **Route Path**: `/smart-bridge/api/sync/ingest`
+- **Route Path Transform**: Leave empty (or use `s/from/to/g` for path rewriting)
+- **Basic Authentication**: Leave empty unless Smart Bridge requires it
+- **Forward existing Authorization header**: Yes (if needed)
+
+Click "Set Route" button, then "Save changes"
+
+#### Data Control Tab
+- **Auto Retry**: Configure retry policy if needed
+- **Store Request Body**: Yes (for debugging)
+- **Store Response Body**: Yes (for debugging)
+
+#### User Access Tab
+- Add users/groups that can access this channel
+- For development, you can leave this empty
+
+#### Alerts Tab
+- Configure alerts for failed transactions if needed
+
+#### Logs Tab
+- View transaction logs for this channel
 
 ## Smart Bridge Configuration
 
@@ -101,52 +150,58 @@ After registration, the system sends periodic heartbeats to OpenHIM Core:
 
 If heartbeats fail, OpenHIM Core will mark the mediator as inactive. The system logs heartbeat failures at DEBUG level to avoid log noise.
 
-## Channel Configuration
+## Channel Configuration Examples
 
-### UCS-to-FHIR Channel
+### Example 1: UCS-to-FHIR Ingestion Channel
 
-Create in OpenHIM Console or via API:
+**Basic Info:**
+- Name: `Smart Bridge UCS to FHIR`
+- Type: HTTP
+- Status: Enabled
 
-```json
-{
-  "name": "UCS to FHIR Transformation",
-  "urlPattern": "^/ucs/clients.*$",
-  "type": "http",
-  "methods": ["POST", "PUT"],
-  "routes": [
-    {
-      "name": "Smart Bridge UCS Mediator",
-      "host": "smart-bridge-host",
-      "port": 8080,
-      "path": "/smart-bridge/ucs/clients",
-      "primary": true
-    }
-  ],
-  "allow": ["smart-bridge-mediator"],
-  "authType": "private"
-}
-```
+**Request Matching:**
+- URL Pattern: `/smart-bridge/api/sync/ingest`
+- Methods: POST, PUT
 
-### FHIR-to-UCS Channel (Reverse Sync)
+**Routes:**
+- Route Name: `Smart Bridge Mediator`
+- Host: `host.docker.internal` (or your Smart Bridge hostname)
+- Port: `8083`
+- Path: `/smart-bridge/api/sync/ingest`
+- Primary: Yes
+- Status: Enabled
 
-```json
-{
-  "name": "FHIR to UCS Reverse Sync",
-  "urlPattern": "^/fhir/webhook.*$",
-  "type": "http",
-  "methods": ["POST"],
-  "routes": [
-    {
-      "name": "Smart Bridge FHIR Mediator",
-      "host": "smart-bridge-host",
-      "port": 8080,
-      "path": "/smart-bridge/fhir/webhook",
-      "primary": true
-    }
-  ],
-  "allow": ["smart-bridge-mediator"],
-  "authType": "private"
-}
+### Example 2: FHIR Webhook Channel
+
+**Basic Info:**
+- Name: `FHIR Webhook to Smart Bridge`
+- Type: HTTP
+- Status: Enabled
+
+**Request Matching:**
+- URL Pattern: `/smart-bridge/fhir/webhook`
+- Methods: POST
+
+**Routes:**
+- Route Name: `Smart Bridge FHIR Handler`
+- Host: `host.docker.internal`
+- Port: `8083`
+- Path: `/smart-bridge/fhir/webhook`
+- Primary: Yes
+- Status: Enabled
+
+## Testing Your Channel
+
+After creating a channel, test it:
+
+```bash
+# Test the channel endpoint
+curl -X POST http://localhost:8080/smart-bridge/api/sync/ingest \
+  -H "Content-Type: application/json" \
+  -d '{"test": "data"}'
+
+# Check transaction logs in OpenHIM Console
+# Navigate to: Transactions > View recent transactions
 ```
 
 ## Health Check Endpoints
@@ -181,15 +236,57 @@ The mediator health controller exposes:
 
 ## Troubleshooting
 
+### OpenHIM Core Not Starting
+
+**Symptom**: MongoDB connection timeout errors
+
+```
+MongooseError: Operation `agendaJobs.createIndex()` buffering timed out after 10000ms
+```
+
+**Solution**: Ensure MongoDB is fully started before OpenHIM Core:
+1. Check MongoDB is healthy: `docker logs smart-bridge-mongo`
+2. Restart OpenHIM: `docker-compose restart openhim-core`
+3. If port 27017 is in use, stop local MongoDB: `sudo systemctl stop mongod`
+
+### Empty Reply from Heartbeat
+
+**Symptom**: `curl http://localhost:8080/heartbeat` returns empty reply
+
+**Possible Causes**:
+1. OpenHIM Core still initializing (wait 30-60 seconds)
+2. MongoDB connection issues (check logs)
+3. Port conflict on 8080
+
+**Check Status**:
+```bash
+# View OpenHIM logs
+docker logs smart-bridge-openhim-core --tail 50
+
+# Check if OpenHIM is running
+docker ps | grep openhim
+
+# Verify MongoDB connection
+docker exec smart-bridge-mongo mongosh --eval "db.adminCommand('ping')"
+```
+
+### Channel Not Routing Requests
+
+1. Verify channel is enabled in OpenHIM Console
+2. Check URL pattern matches your request path
+3. Ensure route host/port are correct
+4. Review transaction logs in OpenHIM Console for errors
+5. Verify Smart Bridge application is running and accessible
+
 ### Mediator Registration Fails
 
 1. Verify OpenHIM Core URL is correct and reachable:
    ```bash
-   curl -k ${OPENHIM_CORE_URL}/heartbeat
+   curl http://localhost:8080/heartbeat
    ```
-2. Check credentials are valid
+2. Check credentials in `.env` file
 3. Review application logs for detailed error messages
-4. Ensure `OPENHIM_TRUST_SELF_SIGNED=true` if using self-signed certificates in dev
+4. Ensure network connectivity between Smart Bridge and OpenHIM
 
 ### Heartbeat Failures
 
@@ -204,3 +301,25 @@ If logs show "No mediators found to register":
 1. Verify mediator beans are being created (check Spring context)
 2. Ensure `smart-bridge-mediators` module is included in the build
 3. Check for missing `@Service` annotations on mediator classes
+
+## Key Differences from Older OpenHIM Versions
+
+### UI Changes in v8.5.1
+- Tabbed interface for channel configuration (Basic Info, Request Matching, Routes, etc.)
+- "Set Route" button to add/edit routes instead of inline forms
+- Toggle buttons for Primary Route and Status instead of dropdowns
+- Route Path Transform field for URL rewriting
+- Simplified authentication configuration
+
+### Configuration Changes
+- MongoDB connection uses `mongo_url` environment variable
+- Heartbeat endpoint may return empty initially (this is normal)
+- Default ports: 8080 (HTTP), 5000 (HTTPS API), 5001 (HTTPS)
+- Console runs on port 9000 (was 9000 in older versions too)
+
+### Best Practices for v8.5.1
+- Use `host.docker.internal` for Docker-to-host communication
+- Enable "Store Request/Response Body" during development
+- Configure proper authentication for production
+- Use route path transforms for URL rewriting instead of proxy rewrites
+- Monitor transaction logs regularly for routing issues

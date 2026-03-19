@@ -1,0 +1,38 @@
+{
+  "baseEntityId": "test-client-001",
+  "type": "Client",
+  "serverVersion": 1567890123456,
+  "identifiers": {
+    "opensrp_id": "12345-67890"
+  },
+  "firstName": "John",
+  "middleName": "",
+  "lastName": "Doe",
+  "birthdate": "1990-01-15T00:00:00.000+0300",
+  "birthdateApprox": false,
+  "gender": "Male",
+  "addresses": [
+    {
+      "addressType": "usual_residence",
+      "country": "Tanzania",
+      "stateProvince": "Dar es Salaam",
+      "countyDistrict": "Ilala",
+      "cityVillage": "Kariakoo",
+      "subDistrict": "",
+      "town": "",
+      "subTown": ""
+    }
+  ],
+  "attributes": {
+    "national_id": "12345678",
+    "phone_number": "+255712345678",
+    "email": "john.doe@example.com"
+  },
+  "relationships": {},
+  "clientType": "ec_family_member",
+  "teamId": "team-uuid-001",
+  "locationId": "location-uuid-001",
+  "dateCreated": "2024-01-15T10:30:00.000+0300",
+  "dateEdited": "2024-01-20T14:00:00.000+0300",
+  "voided": false
+}

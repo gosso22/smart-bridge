@@ -1,121 +1,166 @@
 # Smart Bridge - Quick Start Guide
 
-## Application Status
-✅ **Smart Bridge is running successfully!**
+## 🚀 One-Command Setup
 
-## Configuration
-
-### Endpoints
-- **UCS API**: https://ucs-opensrp-dev.d-tree.org/opensrp
-- **FHIR Server**: http://localhost:8082/fhir
-- **Smart Bridge**: http://localhost:8080/smart-bridge
-
-### Application URLs
-- **Health Check**: http://localhost:8080/smart-bridge/actuator/health
-- **Metrics**: http://localhost:8080/smart-bridge/actuator/metrics
-- **Prometheus**: http://localhost:8080/smart-bridge/actuator/prometheus
-
-### API Endpoints
-- **FHIR Webhook**: http://localhost:8080/smart-bridge/fhir/webhook/notification
-- **FHIR Resource Webhook**: http://localhost:8080/smart-bridge/fhir/webhook/resource/{resourceType}
-- **Mediator Health**: http://localhost:8080/smart-bridge/mediator/health
-- **API Health**: http://localhost:8080/smart-bridge/api/health
-
-## Services Running
-- ✅ Tomcat Web Server (port 8080)
-- ✅ RabbitMQ Message Queue (localhost:5672)
-- ✅ FHIR Client Service
-- ✅ Transformation Services
-- ✅ Circuit Breakers & Retry Policies
-- ✅ Security & Encryption Services
-- ✅ Monitoring & Metrics
-
-## Testing the Application
-
-### 1. Check Health Status
 ```bash
-curl http://localhost:8080/smart-bridge/actuator/health
+./deploy-local.sh
 ```
 
-### 2. Check FHIR Server Connection
+This script will:
+- ✅ Check prerequisites (Docker, Java, Maven)
+- ✅ Start all infrastructure services (HAPI FHIR, OpenHIM, RabbitMQ)
+- ✅ Build Smart Bridge application
+- ✅ Display service URLs and credentials
+
+## 📝 Manual Setup (3 Steps)
+
+### Step 1: Configure Your UCS System
+
+Edit `.env` file:
 ```bash
-curl http://localhost:8082/fhir/metadata
+UCS_API_URL=https://your-ucs-system.com/api
+UCS_USERNAME=your-username
+UCS_PASSWORD=your-password
 ```
 
-### 3. Test FHIR Webhook
+### Step 2: Start Infrastructure
+
 ```bash
-curl -X POST http://localhost:8080/smart-bridge/fhir/webhook/notification \
-  -H "Content-Type: application/fhir+json" \
-  -d '{
-    "resourceType": "Bundle",
-    "type": "transaction",
-    "entry": []
-  }'
+docker-compose up -d
 ```
 
-## Stopping the Application
+Wait 2-3 minutes for services to start.
+
+### Step 3: Run Smart Bridge
+
 ```bash
-# Find the process
-ps aux | grep smart-bridge-application
-
-# Kill the process
-pkill -f "smart-bridge-application"
-```
-
-## Restarting the Application
-```bash
-cd /work/integration/smart-bridge
-
-# Set environment variables
-export ENCRYPTION_KEY="v+2I5EaJfTT4BmMdQz7AvZGyDZ03RoG6l/eBVssBREk="
-export UCS_API_URL="https://ucs-opensrp-dev.d-tree.org/opensrp"
-export FHIR_SERVER_URL="http://localhost:8082/fhir"
-
-# Start the application
 mvn spring-boot:run -pl smart-bridge-application -Dspring-boot.run.profiles=dev
 ```
 
-## Logs
-Application logs are being written to: `/work/integration/smart-bridge/smart-bridge.log`
+## 🧪 Test Your Setup
 
-View logs in real-time:
 ```bash
-tail -f /work/integration/smart-bridge/smart-bridge.log
+./test-local-deployment.sh
 ```
 
-## Next Steps
-
-1. **Configure FHIR Webhooks**: Set up subscriptions on your FHIR server to send notifications to Smart Bridge
-2. **Test UCS Integration**: Verify connectivity to your UCS system
-3. **Monitor Metrics**: Check Prometheus metrics for system health
-4. **Review Audit Logs**: Check the `logs/` directory for audit trails
-
-## Troubleshooting
-
-### Port Already in Use
+Or manually:
 ```bash
-lsof -ti:8080 | xargs kill -9
+# Health check
+curl http://localhost:8083/smart-bridge/actuator/health
+
+# Test ingestion
+curl -X POST http://localhost:8083/smart-bridge/api/sync/ingest \
+  -H "Content-Type: application/json" \
+  -d @test-data/test-ucs-client.json
+
+# Check FHIR
+curl http://localhost:8082/fhir/Patient
 ```
 
-### RabbitMQ Not Running
+## 🌐 Service URLs
+
+| Service | URL | Credentials |
+|---------|-----|-------------|
+| **Smart Bridge** | http://localhost:8083/smart-bridge | - |
+| **HAPI FHIR** | http://localhost:8082/fhir | - |
+| **OpenHIM Console** | http://localhost:9000 | root@openhim.org / openhim-password |
+| **RabbitMQ** | http://localhost:15672 | smartbridge / smartbridge123 |
+
+## 🔧 OpenHIM Configuration
+
+1. Open http://localhost:9000
+2. Login: `root@openhim.org` / `openhim-password`
+3. Create Client:
+   - ID: `smart-bridge-mediator`
+   - Password: `smartbridge123`
+4. Create Channel:
+   - Name: `UCS to FHIR Ingestion`
+   - URL: `/ucs-to-fhir`
+   - Route: `host.docker.internal:8083/smart-bridge/api/sync/ingest`
+
+## 📊 Monitoring
+
 ```bash
-docker start rabbitmq-smartbridge
+# Application logs
+tail -f logs/smart-bridge.log
+
+# Health status
+curl http://localhost:8083/smart-bridge/actuator/health
+
+# Metrics
+curl http://localhost:8083/smart-bridge/actuator/metrics
+
+# RabbitMQ queues
+open http://localhost:15672
+
+# OpenHIM transactions
+open http://localhost:9000
 ```
 
-### Check Application Status
+## 🛑 Stop Everything
+
 ```bash
-curl http://localhost:8080/smart-bridge/actuator/health
+# Stop Smart Bridge (Ctrl+C in terminal)
+
+# Stop Docker services
+docker-compose down
+
+# Stop and remove all data
+docker-compose down -v
 ```
 
-## Environment Variables
-All configuration is stored in `.env` file:
-- `ENCRYPTION_KEY`: Base64-encoded encryption key
-- `UCS_API_URL`: UCS system endpoint
-- `FHIR_SERVER_URL`: FHIR server endpoint
-- `RABBITMQ_HOST`: RabbitMQ host (default: localhost)
+## 🆘 Troubleshooting
 
-## Security Notes
-- Default security password is generated on startup (check logs)
-- For production, update security configuration
-- Use strong encryption keys
-- Enable TLS for production deployments
+### Services won't start
+```bash
+docker-compose ps
+docker-compose logs <service-name>
+```
+
+### Can't connect to UCS
+```bash
+# Test UCS connectivity
+curl -u username:password https://your-ucs-system.com/api/health
+```
+
+### Port already in use
+```bash
+# Check what's using the port
+lsof -i :8083
+lsof -i :8082
+
+# Change ports in docker-compose.yml if needed
+```
+
+## 📚 Full Documentation
+
+See `LOCAL_DEPLOYMENT.md` for detailed step-by-step instructions.
+
+## 🎯 Common Tasks
+
+### Sync a UCS Client to FHIR
+```bash
+curl -X POST http://localhost:8083/smart-bridge/api/sync/ingest \
+  -H "Content-Type: application/json" \
+  -d '{"baseEntityId":"123","firstName":"John","lastName":"Doe",...}'
+```
+
+### Sync FHIR Patient back to UCS
+```bash
+curl -X POST "http://localhost:8083/smart-bridge/api/sync/reverse?patientId=<fhir-patient-id>"
+```
+
+### Bulk Sync
+```bash
+curl -X POST "http://localhost:8083/smart-bridge/api/sync/bulk?batchSize=50"
+```
+
+### View Audit Logs
+```bash
+tail -f logs/audit.log
+```
+
+### Check Transformation Metrics
+```bash
+curl http://localhost:8083/smart-bridge/actuator/metrics/transformation.duration
+```
