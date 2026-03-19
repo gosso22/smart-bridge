@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * Configuration for UCS API client.
+ * Supports basic, token, and keycloak authentication types.
  */
 @Configuration
 public class UCSClientConfig {
@@ -20,7 +21,7 @@ public class UCSClientConfig {
     @Value("${smartbridge.ucs.api-url}")
     private String ucsApiUrl;
 
-    @Value("${smartbridge.ucs.auth-type:token}")
+    @Value("${smartbridge.ucs.auth-type:basic}")
     private String authType;
 
     @Value("${smartbridge.ucs.username:}")
@@ -32,17 +33,36 @@ public class UCSClientConfig {
     @Value("${smartbridge.ucs.token:}")
     private String token;
 
+    @Value("${smartbridge.ucs.keycloak.token-url:}")
+    private String keycloakTokenUrl;
+
+    @Value("${smartbridge.ucs.keycloak.client-id:}")
+    private String keycloakClientId;
+
+    @Value("${smartbridge.ucs.keycloak.client-secret:}")
+    private String keycloakClientSecret;
+
     @Bean
     public UCSApiClient ucsApiClient() {
-        logger.info("Creating UCS API client for URL: {}", ucsApiUrl);
-        
+        logger.info("Creating UCS API client for URL: {} with auth-type: {}", ucsApiUrl, authType);
+
         UCSAuthConfig authConfig;
         if ("basic".equalsIgnoreCase(authType)) {
             authConfig = new UCSAuthConfig(AuthType.BASIC, username, password);
+        } else if ("keycloak".equalsIgnoreCase(authType)) {
+            authConfig = new UCSAuthConfig(AuthType.KEYCLOAK, username, password);
+            authConfig.setKeycloakTokenUrl(keycloakTokenUrl);
+            authConfig.setKeycloakClientId(keycloakClientId);
+            authConfig.setKeycloakClientSecret(keycloakClientSecret);
         } else {
-            authConfig = new UCSAuthConfig(token);
+            // Default to token
+            if (token != null && !token.isEmpty()) {
+                authConfig = new UCSAuthConfig(token);
+            } else {
+                authConfig = new UCSAuthConfig(AuthType.TOKEN, username, password);
+            }
         }
-        
+
         return new UCSApiClient(ucsApiUrl, authConfig);
     }
 }

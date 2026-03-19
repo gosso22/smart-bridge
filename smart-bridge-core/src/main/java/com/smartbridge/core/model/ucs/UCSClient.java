@@ -1,323 +1,357 @@
 package com.smartbridge.core.model.ucs;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
-import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
-import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
-import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
- * UCS Client data model representing patient/client information in UCS format.
- * This model supports JSON schema validation and bidirectional transformation with FHIR.
+ * UCS Client data model aligned with the actual OpenSRP Client structure.
+ * Fields are flat (top-level) to match the JSON returned by OpenSRP's
+ * {@code /rest/client/getAll} endpoint.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class UCSClient {
 
+    @JsonProperty("baseEntityId")
+    private String baseEntityId;
+
+    @JsonProperty("type")
+    private String type;
+
     @JsonProperty("identifiers")
-    private UCSIdentifiers identifiers;
+    private Map<String, String> identifiers;
 
-    @JsonProperty("demographics")
-    private UCSDemographics demographics;
+    @JsonProperty("firstName")
+    private String firstName;
 
-    @JsonProperty("clinicalData")
-    private UCSClinicalData clinicalData;
+    @JsonProperty("middleName")
+    private String middleName;
 
-    @JsonProperty("metadata")
-    private UCSMetadata metadata;
+    @JsonProperty("lastName")
+    private String lastName;
+
+    @JsonProperty("birthdate")
+    private String birthdate;
+
+    @JsonProperty("birthdateApprox")
+    private Boolean birthdateApprox;
+
+    @JsonProperty("gender")
+    private String gender;
+
+    @JsonProperty("addresses")
+    private List<OpenSRPAddress> addresses;
+
+    @JsonProperty("attributes")
+    private Map<String, String> attributes;
+
+    @JsonProperty("relationships")
+    private Map<String, List<String>> relationships;
+
+    @JsonProperty("clientType")
+    private String clientType;
+
+    @JsonProperty("teamId")
+    private String teamId;
+
+    @JsonProperty("locationId")
+    private String locationId;
+
+    @JsonProperty("serverVersion")
+    private Long serverVersion;
+
+    @JsonProperty("dateCreated")
+    private String dateCreated;
+
+    @JsonProperty("dateEdited")
+    private String dateEdited;
+
+    @JsonProperty("voided")
+    private Boolean voided;
 
     // Constructors
     public UCSClient() {}
 
-    public UCSClient(UCSIdentifiers identifiers, UCSDemographics demographics, 
-                     UCSClinicalData clinicalData, UCSMetadata metadata) {
-        this.identifiers = identifiers;
-        this.demographics = demographics;
-        this.clinicalData = clinicalData;
-        this.metadata = metadata;
+    // Getters and Setters
+
+    public String getBaseEntityId() {
+        return baseEntityId;
     }
 
-    // Getters and Setters
-    public UCSIdentifiers getIdentifiers() {
+    public void setBaseEntityId(String baseEntityId) {
+        this.baseEntityId = baseEntityId;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public Map<String, String> getIdentifiers() {
         return identifiers;
     }
 
-    public void setIdentifiers(UCSIdentifiers identifiers) {
+    public void setIdentifiers(Map<String, String> identifiers) {
         this.identifiers = identifiers;
     }
 
-    public UCSDemographics getDemographics() {
-        return demographics;
+    public String getFirstName() {
+        return firstName;
     }
 
-    public void setDemographics(UCSDemographics demographics) {
-        this.demographics = demographics;
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
     }
 
-    public UCSClinicalData getClinicalData() {
-        return clinicalData;
+    public String getMiddleName() {
+        return middleName;
     }
 
-    public void setClinicalData(UCSClinicalData clinicalData) {
-        this.clinicalData = clinicalData;
+    public void setMiddleName(String middleName) {
+        this.middleName = middleName;
     }
 
-    public UCSMetadata getMetadata() {
-        return metadata;
+    public String getLastName() {
+        return lastName;
     }
 
-    public void setMetadata(UCSMetadata metadata) {
-        this.metadata = metadata;
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
     }
 
-    // Nested classes for UCS data structure
-    public static class UCSIdentifiers {
-        @JsonProperty("opensrp_id")
-        private String opensrpId;
-
-        @JsonProperty("national_id")
-        private String nationalId;
-
-        public UCSIdentifiers() {}
-
-        public UCSIdentifiers(String opensrpId, String nationalId) {
-            this.opensrpId = opensrpId;
-            this.nationalId = nationalId;
-        }
-
-        public String getOpensrpId() {
-            return opensrpId;
-        }
-
-        public void setOpensrpId(String opensrpId) {
-            this.opensrpId = opensrpId;
-        }
-
-        public String getNationalId() {
-            return nationalId;
-        }
-
-        public void setNationalId(String nationalId) {
-            this.nationalId = nationalId;
-        }
+    public String getBirthdate() {
+        return birthdate;
     }
 
-    public static class UCSDemographics {
-        @JsonProperty("firstName")
-        private String firstName;
-
-        @JsonProperty("lastName")
-        private String lastName;
-
-        @JsonProperty("gender")
-        private String gender; // M, F, O
-
-        @JsonProperty("birthDate")
-        @JsonSerialize(using = LocalDateSerializer.class)
-        @JsonDeserialize(using = LocalDateDeserializer.class)
-        private LocalDate birthDate;
-
-        @JsonProperty("address")
-        private UCSAddress address;
-
-        public UCSDemographics() {}
-
-        public UCSDemographics(String firstName, String lastName, String gender, 
-                              LocalDate birthDate, UCSAddress address) {
-            this.firstName = firstName;
-            this.lastName = lastName;
-            this.gender = gender;
-            this.birthDate = birthDate;
-            this.address = address;
-        }
-
-        public String getFirstName() {
-            return firstName;
-        }
-
-        public void setFirstName(String firstName) {
-            this.firstName = firstName;
-        }
-
-        public String getLastName() {
-            return lastName;
-        }
-
-        public void setLastName(String lastName) {
-            this.lastName = lastName;
-        }
-
-        public String getGender() {
-            return gender;
-        }
-
-        public void setGender(String gender) {
-            this.gender = gender;
-        }
-
-        public LocalDate getBirthDate() {
-            return birthDate;
-        }
-
-        public void setBirthDate(LocalDate birthDate) {
-            this.birthDate = birthDate;
-        }
-
-        public UCSAddress getAddress() {
-            return address;
-        }
-
-        public void setAddress(UCSAddress address) {
-            this.address = address;
-        }
+    public void setBirthdate(String birthdate) {
+        this.birthdate = birthdate;
     }
 
-    public static class UCSAddress {
-        @JsonProperty("district")
-        private String district;
-
-        @JsonProperty("ward")
-        private String ward;
-
-        @JsonProperty("village")
-        private String village;
-
-        public UCSAddress() {}
-
-        public UCSAddress(String district, String ward, String village) {
-            this.district = district;
-            this.ward = ward;
-            this.village = village;
-        }
-
-        public String getDistrict() {
-            return district;
-        }
-
-        public void setDistrict(String district) {
-            this.district = district;
-        }
-
-        public String getWard() {
-            return ward;
-        }
-
-        public void setWard(String ward) {
-            this.ward = ward;
-        }
-
-        public String getVillage() {
-            return village;
-        }
-
-        public void setVillage(String village) {
-            this.village = village;
-        }
+    public Boolean getBirthdateApprox() {
+        return birthdateApprox;
     }
 
-    public static class UCSClinicalData {
-        @JsonProperty("observations")
-        private List<Object> observations;
-
-        @JsonProperty("medications")
-        private List<Object> medications;
-
-        @JsonProperty("procedures")
-        private List<Object> procedures;
-
-        public UCSClinicalData() {}
-
-        public UCSClinicalData(List<Object> observations, List<Object> medications, List<Object> procedures) {
-            this.observations = observations;
-            this.medications = medications;
-            this.procedures = procedures;
-        }
-
-        public List<Object> getObservations() {
-            return observations;
-        }
-
-        public void setObservations(List<Object> observations) {
-            this.observations = observations;
-        }
-
-        public List<Object> getMedications() {
-            return medications;
-        }
-
-        public void setMedications(List<Object> medications) {
-            this.medications = medications;
-        }
-
-        public List<Object> getProcedures() {
-            return procedures;
-        }
-
-        public void setProcedures(List<Object> procedures) {
-            this.procedures = procedures;
-        }
+    public void setBirthdateApprox(Boolean birthdateApprox) {
+        this.birthdateApprox = birthdateApprox;
     }
 
-    public static class UCSMetadata {
-        @JsonProperty("createdAt")
-        @JsonSerialize(using = LocalDateTimeSerializer.class)
-        @JsonDeserialize(using = LocalDateTimeDeserializer.class)
-        private LocalDateTime createdAt;
+    public String getGender() {
+        return gender;
+    }
 
-        @JsonProperty("updatedAt")
-        @JsonSerialize(using = LocalDateTimeSerializer.class)
-        @JsonDeserialize(using = LocalDateTimeDeserializer.class)
-        private LocalDateTime updatedAt;
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
 
-        @JsonProperty("source")
-        private String source;
+    public List<OpenSRPAddress> getAddresses() {
+        return addresses;
+    }
 
-        @JsonProperty("fhir_id")
-        private String fhirId; // For reverse mapping from FHIR
+    public void setAddresses(List<OpenSRPAddress> addresses) {
+        this.addresses = addresses;
+    }
 
-        public UCSMetadata() {}
+    public Map<String, String> getAttributes() {
+        return attributes;
+    }
 
-        public UCSMetadata(LocalDateTime createdAt, LocalDateTime updatedAt, String source, String fhirId) {
-            this.createdAt = createdAt;
-            this.updatedAt = updatedAt;
-            this.source = source;
-            this.fhirId = fhirId;
+    public void setAttributes(Map<String, String> attributes) {
+        this.attributes = attributes;
+    }
+
+    public Map<String, List<String>> getRelationships() {
+        return relationships;
+    }
+
+    public void setRelationships(Map<String, List<String>> relationships) {
+        this.relationships = relationships;
+    }
+
+    public String getClientType() {
+        return clientType;
+    }
+
+    public void setClientType(String clientType) {
+        this.clientType = clientType;
+    }
+
+    public String getTeamId() {
+        return teamId;
+    }
+
+    public void setTeamId(String teamId) {
+        this.teamId = teamId;
+    }
+
+    public String getLocationId() {
+        return locationId;
+    }
+
+    public void setLocationId(String locationId) {
+        this.locationId = locationId;
+    }
+
+    public Long getServerVersion() {
+        return serverVersion;
+    }
+
+    public void setServerVersion(Long serverVersion) {
+        this.serverVersion = serverVersion;
+    }
+
+    public String getDateCreated() {
+        return dateCreated;
+    }
+
+    public void setDateCreated(String dateCreated) {
+        this.dateCreated = dateCreated;
+    }
+
+    public String getDateEdited() {
+        return dateEdited;
+    }
+
+    public void setDateEdited(String dateEdited) {
+        this.dateEdited = dateEdited;
+    }
+
+    public Boolean getVoided() {
+        return voided;
+    }
+
+    public void setVoided(Boolean voided) {
+        this.voided = voided;
+    }
+
+    // --- Convenience accessors for common identifier/attribute lookups ---
+
+    public String getOpensrpId() {
+        if (identifiers != null) {
+            return identifiers.get("opensrp_id");
+        }
+        return null;
+    }
+
+    public String getNationalId() {
+        if (attributes != null && attributes.containsKey("national_id")) {
+            return attributes.get("national_id");
+        }
+        if (identifiers != null && identifiers.containsKey("national_id")) {
+            return identifiers.get("national_id");
+        }
+        return null;
+    }
+
+    /**
+     * OpenSRP Address model matching the actual JSON structure.
+     */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class OpenSRPAddress {
+
+        @JsonProperty("addressType")
+        private String addressType;
+
+        @JsonProperty("country")
+        private String country;
+
+        @JsonProperty("stateProvince")
+        private String stateProvince;
+
+        @JsonProperty("cityVillage")
+        private String cityVillage;
+
+        @JsonProperty("countyDistrict")
+        private String countyDistrict;
+
+        @JsonProperty("subDistrict")
+        private String subDistrict;
+
+        @JsonProperty("town")
+        private String town;
+
+        @JsonProperty("subTown")
+        private String subTown;
+
+        @JsonProperty("addressFields")
+        private Map<String, String> addressFields;
+
+        public OpenSRPAddress() {}
+
+        public String getAddressType() {
+            return addressType;
         }
 
-        public LocalDateTime getCreatedAt() {
-            return createdAt;
+        public void setAddressType(String addressType) {
+            this.addressType = addressType;
         }
 
-        public void setCreatedAt(LocalDateTime createdAt) {
-            this.createdAt = createdAt;
+        public String getCountry() {
+            return country;
         }
 
-        public LocalDateTime getUpdatedAt() {
-            return updatedAt;
+        public void setCountry(String country) {
+            this.country = country;
         }
 
-        public void setUpdatedAt(LocalDateTime updatedAt) {
-            this.updatedAt = updatedAt;
+        public String getStateProvince() {
+            return stateProvince;
         }
 
-        public String getSource() {
-            return source;
+        public void setStateProvince(String stateProvince) {
+            this.stateProvince = stateProvince;
         }
 
-        public void setSource(String source) {
-            this.source = source;
+        public String getCityVillage() {
+            return cityVillage;
         }
 
-        public String getFhirId() {
-            return fhirId;
+        public void setCityVillage(String cityVillage) {
+            this.cityVillage = cityVillage;
         }
 
-        public void setFhirId(String fhirId) {
-            this.fhirId = fhirId;
+        public String getCountyDistrict() {
+            return countyDistrict;
+        }
+
+        public void setCountyDistrict(String countyDistrict) {
+            this.countyDistrict = countyDistrict;
+        }
+
+        public String getSubDistrict() {
+            return subDistrict;
+        }
+
+        public void setSubDistrict(String subDistrict) {
+            this.subDistrict = subDistrict;
+        }
+
+        public String getTown() {
+            return town;
+        }
+
+        public void setTown(String town) {
+            this.town = town;
+        }
+
+        public String getSubTown() {
+            return subTown;
+        }
+
+        public void setSubTown(String subTown) {
+            this.subTown = subTown;
+        }
+
+        public Map<String, String> getAddressFields() {
+            return addressFields;
+        }
+
+        public void setAddressFields(Map<String, String> addressFields) {
+            this.addressFields = addressFields;
         }
     }
 }

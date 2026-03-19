@@ -1,118 +1,103 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "UCS Client Schema",
-  "description": "JSON schema for validating UCS Client data structure",
+  "title": "UCS Client Schema (OpenSRP)",
+  "description": "JSON schema for validating OpenSRP Client data structure",
   "type": "object",
-  "required": ["identifiers", "demographics", "metadata"],
+  "required": ["baseEntityId", "firstName", "lastName", "gender", "identifiers"],
   "properties": {
+    "baseEntityId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Base entity identifier (required)"
+    },
+    "type": {
+      "type": ["string", "null"],
+      "description": "Entity type (e.g. Client)"
+    },
     "identifiers": {
       "type": "object",
-      "required": ["opensrp_id"],
-      "properties": {
-        "opensrp_id": {
-          "type": "string",
-          "minLength": 1,
-          "description": "OpenSRP identifier (required)"
-        },
-        "national_id": {
-          "type": ["string", "null"],
-          "description": "National ID (optional)"
-        }
-      }
+      "description": "Map of identifier type to value (e.g. opensrp_id, zeir_id)"
     },
-    "demographics": {
-      "type": "object",
-      "required": ["firstName", "lastName", "gender", "birthDate"],
-      "properties": {
-        "firstName": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Client's first name"
-        },
-        "lastName": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Client's last name"
-        },
-        "gender": {
-          "type": "string",
-          "enum": ["M", "F", "O"],
-          "description": "Gender code: M (Male), F (Female), O (Other)"
-        },
-        "birthDate": {
-          "type": "string",
-          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
-          "description": "Birth date in YYYY-MM-DD format"
-        },
-        "address": {
-          "type": ["object", "null"],
-          "properties": {
-            "district": {
-              "type": "string",
-              "description": "District name"
-            },
-            "ward": {
-              "type": "string",
-              "description": "Ward name"
-            },
-            "village": {
-              "type": "string",
-              "description": "Village name"
-            }
-          }
-        }
-      }
+    "firstName": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Client's first name"
     },
-    "clinicalData": {
+    "middleName": {
+      "type": ["string", "null"],
+      "description": "Client's middle name (optional)"
+    },
+    "lastName": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Client's last name"
+    },
+    "birthdate": {
+      "type": ["string", "null"],
+      "description": "Birth date as ISO datetime string (e.g. 1990-01-15T00:00:00.000+0300)"
+    },
+    "birthdateApprox": {
+      "type": ["boolean", "null"],
+      "description": "Whether birth date is approximate"
+    },
+    "gender": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Gender (Male, Female, or single-letter M/F/O)"
+    },
+    "addresses": {
+      "type": ["array", "null"],
+      "items": {
+        "type": "object",
+        "properties": {
+          "addressType": { "type": ["string", "null"] },
+          "country": { "type": ["string", "null"] },
+          "stateProvince": { "type": ["string", "null"] },
+          "cityVillage": { "type": ["string", "null"] },
+          "countyDistrict": { "type": ["string", "null"] },
+          "subDistrict": { "type": ["string", "null"] },
+          "town": { "type": ["string", "null"] },
+          "subTown": { "type": ["string", "null"] },
+          "addressFields": { "type": ["object", "null"] }
+        }
+      },
+      "description": "Client addresses"
+    },
+    "attributes": {
       "type": ["object", "null"],
-      "properties": {
-        "observations": {
-          "type": "array",
-          "items": {
-            "type": "object"
-          },
-          "description": "Clinical observations"
-        },
-        "medications": {
-          "type": "array",
-          "items": {
-            "type": "object"
-          },
-          "description": "Medication records"
-        },
-        "procedures": {
-          "type": "array",
-          "items": {
-            "type": "object"
-          },
-          "description": "Procedure records"
-        }
-      }
+      "description": "Map of attribute type to value (e.g. national_id, phone_number)"
     },
-    "metadata": {
-      "type": "object",
-      "required": ["source"],
-      "properties": {
-        "createdAt": {
-          "type": ["string", "null"],
-          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})?$",
-          "description": "Creation timestamp in ISO8601 format"
-        },
-        "updatedAt": {
-          "type": ["string", "null"],
-          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})?$",
-          "description": "Last update timestamp in ISO8601 format"
-        },
-        "source": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Source system identifier"
-        },
-        "fhir_id": {
-          "type": ["string", "null"],
-          "description": "FHIR resource ID for reverse mapping"
-        }
-      }
+    "relationships": {
+      "type": ["object", "null"],
+      "description": "Map of relationship type to list of related entity IDs"
+    },
+    "clientType": {
+      "type": ["string", "null"],
+      "description": "Client type (e.g. ec_family, ec_family_member)"
+    },
+    "teamId": {
+      "type": ["string", "null"],
+      "description": "Team identifier"
+    },
+    "locationId": {
+      "type": ["string", "null"],
+      "description": "Location identifier"
+    },
+    "serverVersion": {
+      "type": ["number", "null"],
+      "description": "Server version for incremental sync"
+    },
+    "dateCreated": {
+      "type": ["string", "null"],
+      "description": "Creation timestamp"
+    },
+    "dateEdited": {
+      "type": ["string", "null"],
+      "description": "Last edit timestamp"
+    },
+    "voided": {
+      "type": ["boolean", "null"],
+      "description": "Whether the client record has been voided"
     }
   }
 }
