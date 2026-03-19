@@ -1,10 +1,10 @@
 # OpenHIM Mediator Configuration
 openhim:
-  enabled: false  # Set to true to enable OpenHIM integration
+  enabled: ${OPENHIM_ENABLED:true}
   core:
     url: http://localhost:8080
     username: root@openhim.org
-    password: openhim-password
+    password: ${OPENHIM_PASSWORD:SmartBridge@2026}
 
 # Server Configuration
 server:

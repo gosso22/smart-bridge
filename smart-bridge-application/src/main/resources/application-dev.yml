@@ -14,9 +14,7 @@ smartbridge:
     server-url: http://localhost:8082/fhir
     timeout: 30000
   ucs:
-    api-url: http://localhost:8081/ucs
     timeout: 10000
-    auth-type: token
   transformation:
     strict-mode: false
     validation-enabled: true

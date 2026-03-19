@@ -3,10 +3,16 @@ spring:
     name: smart-bridge
   profiles:
     active: dev
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:smartbridge}
+    password: ${RABBITMQ_PASSWORD:smartbridge123}
+    virtual-host: ${RABBITMQ_VHOST:/}
 
 # Server configuration
 server:
-  port: 8080
+  port: ${SERVER_PORT:8083}
   servlet:
     context-path: /smart-bridge
   ssl:
@@ -52,7 +58,7 @@ smartbridge:
   openhim:
     core-url: ${OPENHIM_CORE_URL:http://localhost:8080}
     api-username: ${OPENHIM_USERNAME:root@openhim.org}
-    api-password: ${OPENHIM_PASSWORD:password}
+    api-password: ${OPENHIM_PASSWORD:SmartBridge@2026}
     trust-self-signed: ${OPENHIM_TRUST_SELF_SIGNED:true}
   
   # HAPI FHIR configuration
@@ -60,18 +66,24 @@ smartbridge:
     server-url: ${FHIR_SERVER_URL:http://localhost:8082/fhir}
     timeout: ${FHIR_TIMEOUT:30000}
     
-  # UCS system configuration
+  # UCS system configuration (OpenSRP)
   ucs:
-    api-url: ${UCS_API_URL:http://localhost:8081/ucs}
+    api-url: ${UCS_API_URL:http://localhost:8081/opensrp}
     timeout: ${UCS_TIMEOUT:10000}
-    auth-type: ${UCS_AUTH_TYPE:token}
+    auth-type: ${UCS_AUTH_TYPE:basic}
     username: ${UCS_USERNAME:}
     password: ${UCS_PASSWORD:}
-  
+    keycloak:
+      token-url: ${UCS_KEYCLOAK_TOKEN_URL:}
+      client-id: ${UCS_KEYCLOAK_CLIENT_ID:opensrp-client}
+      client-secret: ${UCS_KEYCLOAK_CLIENT_SECRET:}
+
   # Sync configuration
   sync:
     interval-ms: ${SYNC_INTERVAL_MS:300000}  # 5 minutes
+    initial-delay-ms: ${SYNC_INITIAL_DELAY_MS:30000}  # 30 seconds
     enabled: ${SYNC_ENABLED:true}
+    batch-size: ${SYNC_BATCH_SIZE:1000}
     
   # Transformation configuration
   transformation:
