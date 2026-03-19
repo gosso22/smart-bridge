@@ -1,0 +1,106 @@
+services:
+  # HAPI FHIR Server
+  hapi-fhir:
+    image: hapiproject/hapi:v6.8.0
+    container_name: smart-bridge-hapi-fhir
+    ports:
+      - "8082:8080"
+    environment:
+      - hapi.fhir.fhir_version=R4
+      - hapi.fhir.subscription.resthook_enabled=true
+      - hapi.fhir.allow_external_references=true
+      - hapi.fhir.allow_multiple_delete=true
+    volumes:
+      - hapi-data:/data/hapi
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/fhir/metadata"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - smart-bridge-network
+
+  # MongoDB for OpenHIM
+  mongo:
+    image: mongo:6.0
+    container_name: smart-bridge-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - smart-bridge-network
+
+  # OpenHIM Core
+  openhim-core:
+    image: jembi/openhim-core:v8.5.1
+    container_name: smart-bridge-openhim-core
+    ports:
+      - "8080:8080"  # HTTP
+      - "5000:5000"  # HTTPS API
+      - "5001:5001"  # HTTPS
+    environment:
+      - mongo_url=mongodb://mongo:27017/openhim
+      - mongo_atnaUrl=mongodb://mongo:27017/openhim
+      - NODE_ENV=development
+      - mongo_bufferMaxEntries=0
+    depends_on:
+      mongo:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/heartbeat"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    restart: on-failure
+    networks:
+      - smart-bridge-network
+
+  # OpenHIM Console
+  openhim-console:
+    image: jembi/openhim-console:latest
+    container_name: smart-bridge-openhim-console
+    ports:
+      - "9000:80"
+    volumes:
+      - ./config/openhim-console.json:/usr/share/nginx/html/config/default.json
+    depends_on:
+      - openhim-core
+    networks:
+      - smart-bridge-network
+
+  # RabbitMQ
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    container_name: smart-bridge-rabbitmq
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    environment:
+      - RABBITMQ_DEFAULT_USER=smartbridge
+      - RABBITMQ_DEFAULT_PASS=smartbridge123
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - smart-bridge-network
+
+volumes:
+  hapi-data:
+  mongo-data:
+  rabbitmq-data:
+
+networks:
+  smart-bridge-network:
+    driver: bridge

@@ -52,3 +52,6 @@ application-secrets.yml
 *.jks
 .kiro/
 kiro-specs
+
+# Runtime data
+**/data/server-version.txt
