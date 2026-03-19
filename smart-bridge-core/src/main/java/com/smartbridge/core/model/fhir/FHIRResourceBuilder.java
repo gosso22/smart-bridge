@@ -39,6 +39,13 @@ public class FHIRResourceBuilder {
             return this;
         }
 
+        public PatientBuilder withMiddleName(String middleName) {
+            if (middleName != null && !middleName.isEmpty() && !patient.getName().isEmpty()) {
+                patient.getName().get(0).addGiven(middleName);
+            }
+            return this;
+        }
+
         public PatientBuilder withGender(String genderCode) {
             AdministrativeGender gender = normalizeGender(genderCode);
             patient.setGender(gender);
@@ -55,6 +62,28 @@ public class FHIRResourceBuilder {
 
         public PatientBuilder withAddress(String district, String city, String text) {
             Address address = new Address();
+            if (district != null) {
+                address.setDistrict(district);
+            }
+            if (city != null) {
+                address.setCity(city);
+            }
+            if (text != null) {
+                address.setText(text);
+            }
+            patient.addAddress(address);
+            return this;
+        }
+
+        public PatientBuilder withFullAddress(String country, String state, String district,
+                                              String city, String text) {
+            Address address = new Address();
+            if (country != null) {
+                address.setCountry(country);
+            }
+            if (state != null) {
+                address.setState(state);
+            }
             if (district != null) {
                 address.setDistrict(district);
             }

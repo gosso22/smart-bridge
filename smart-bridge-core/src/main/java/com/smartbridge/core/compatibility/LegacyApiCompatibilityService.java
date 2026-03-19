@@ -300,16 +300,19 @@ public class LegacyApiCompatibilityService {
      * Extract client ID from UCS client object.
      */
     private String extractClientId(UCSClient ucsClient) {
-        if (ucsClient.getIdentifiers() != null && 
-            ucsClient.getIdentifiers().getOpensrpId() != null) {
-            return ucsClient.getIdentifiers().getOpensrpId();
+        String opensrpId = ucsClient.getOpensrpId();
+        if (opensrpId != null && !opensrpId.isEmpty()) {
+            return opensrpId;
         }
-        
-        if (ucsClient.getMetadata() != null && 
-            ucsClient.getMetadata().getFhirId() != null) {
-            return ucsClient.getMetadata().getFhirId();
+
+        if (ucsClient.getBaseEntityId() != null && !ucsClient.getBaseEntityId().isEmpty()) {
+            return ucsClient.getBaseEntityId();
         }
-        
+
+        if (ucsClient.getAttributes() != null && ucsClient.getAttributes().containsKey("fhir_id")) {
+            return ucsClient.getAttributes().get("fhir_id");
+        }
+
         return UUID.randomUUID().toString();
     }
 

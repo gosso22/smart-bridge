@@ -392,10 +392,17 @@ public class IngestionFlowService {
      * Get UCS client identifier for logging.
      */
     private String getUCSClientId(UCSClient ucsClient) {
-        if (ucsClient == null || ucsClient.getIdentifiers() == null) {
+        if (ucsClient == null) {
             return "unknown";
         }
-        return ucsClient.getIdentifiers().getOpensrpId();
+        String opensrpId = ucsClient.getOpensrpId();
+        if (opensrpId != null && !opensrpId.isEmpty()) {
+            return opensrpId;
+        }
+        if (ucsClient.getBaseEntityId() != null && !ucsClient.getBaseEntityId().isEmpty()) {
+            return ucsClient.getBaseEntityId();
+        }
+        return "unknown";
     }
 
     /**
