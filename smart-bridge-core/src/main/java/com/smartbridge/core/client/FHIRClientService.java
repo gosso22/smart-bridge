@@ -485,6 +485,210 @@ public class FHIRClientService {
         }
     }
 
+    // ========== Encounter Operations ==========
+
+    /**
+     * Create a new Encounter resource
+     */
+    public MethodOutcome createEncounter(Encounter encounter) {
+        validateClient();
+        logger.debug("Creating Encounter resource");
+
+        try {
+            MethodOutcome outcome = client.create()
+                .resource(encounter)
+                .execute();
+
+            logger.info("Encounter created with ID: {}", outcome.getId());
+            return outcome;
+        } catch (Exception e) {
+            logger.error("Error creating Encounter resource", e);
+            throw new FHIRClientException("Failed to create Encounter", e);
+        }
+    }
+
+    /**
+     * Get an Encounter resource by ID
+     */
+    public Encounter getEncounter(String encounterId) {
+        validateClient();
+        logger.debug("Retrieving Encounter with ID: {}", encounterId);
+
+        try {
+            Encounter encounter = client.read()
+                .resource(Encounter.class)
+                .withId(encounterId)
+                .execute();
+
+            logger.info("Encounter retrieved: {}", encounterId);
+            return encounter;
+        } catch (Exception e) {
+            logger.error("Error retrieving Encounter with ID: {}", encounterId, e);
+            throw new FHIRClientException("Failed to retrieve Encounter: " + encounterId, e);
+        }
+    }
+
+    /**
+     * Update an existing Encounter resource
+     */
+    public MethodOutcome updateEncounter(Encounter encounter) {
+        validateClient();
+
+        if (encounter.getId() == null || encounter.getId().isEmpty()) {
+            throw new IllegalArgumentException("Encounter must have an ID for update operation");
+        }
+
+        logger.debug("Updating Encounter with ID: {}", encounter.getId());
+
+        try {
+            MethodOutcome outcome = client.update()
+                .resource(encounter)
+                .execute();
+
+            logger.info("Encounter updated: {}", encounter.getId());
+            return outcome;
+        } catch (Exception e) {
+            logger.error("Error updating Encounter with ID: {}", encounter.getId(), e);
+            throw new FHIRClientException("Failed to update Encounter: " + encounter.getId(), e);
+        }
+    }
+
+    // ========== Organization Operations ==========
+
+    /**
+     * Create a new Organization resource
+     */
+    public MethodOutcome createOrganization(Organization organization) {
+        validateClient();
+        logger.debug("Creating Organization resource");
+
+        try {
+            MethodOutcome outcome = client.create()
+                .resource(organization)
+                .execute();
+
+            logger.info("Organization created with ID: {}", outcome.getId());
+            return outcome;
+        } catch (Exception e) {
+            logger.error("Error creating Organization resource", e);
+            throw new FHIRClientException("Failed to create Organization", e);
+        }
+    }
+
+    /**
+     * Get an Organization resource by ID
+     */
+    public Organization getOrganization(String organizationId) {
+        validateClient();
+        logger.debug("Retrieving Organization with ID: {}", organizationId);
+
+        try {
+            Organization organization = client.read()
+                .resource(Organization.class)
+                .withId(organizationId)
+                .execute();
+
+            logger.info("Organization retrieved: {}", organizationId);
+            return organization;
+        } catch (Exception e) {
+            logger.error("Error retrieving Organization with ID: {}", organizationId, e);
+            throw new FHIRClientException("Failed to retrieve Organization: " + organizationId, e);
+        }
+    }
+
+    /**
+     * Update an existing Organization resource
+     */
+    public MethodOutcome updateOrganization(Organization organization) {
+        validateClient();
+
+        if (organization.getId() == null || organization.getId().isEmpty()) {
+            throw new IllegalArgumentException("Organization must have an ID for update operation");
+        }
+
+        logger.debug("Updating Organization with ID: {}", organization.getId());
+
+        try {
+            MethodOutcome outcome = client.update()
+                .resource(organization)
+                .execute();
+
+            logger.info("Organization updated: {}", organization.getId());
+            return outcome;
+        } catch (Exception e) {
+            logger.error("Error updating Organization with ID: {}", organization.getId(), e);
+            throw new FHIRClientException("Failed to update Organization: " + organization.getId(), e);
+        }
+    }
+
+    // ========== Location Operations ==========
+
+    /**
+     * Create a new Location resource
+     */
+    public MethodOutcome createLocation(Location location) {
+        validateClient();
+        logger.debug("Creating Location resource");
+
+        try {
+            MethodOutcome outcome = client.create()
+                .resource(location)
+                .execute();
+
+            logger.info("Location created with ID: {}", outcome.getId());
+            return outcome;
+        } catch (Exception e) {
+            logger.error("Error creating Location resource", e);
+            throw new FHIRClientException("Failed to create Location", e);
+        }
+    }
+
+    /**
+     * Get a Location resource by ID
+     */
+    public Location getLocation(String locationId) {
+        validateClient();
+        logger.debug("Retrieving Location with ID: {}", locationId);
+
+        try {
+            Location location = client.read()
+                .resource(Location.class)
+                .withId(locationId)
+                .execute();
+
+            logger.info("Location retrieved: {}", locationId);
+            return location;
+        } catch (Exception e) {
+            logger.error("Error retrieving Location with ID: {}", locationId, e);
+            throw new FHIRClientException("Failed to retrieve Location: " + locationId, e);
+        }
+    }
+
+    /**
+     * Update an existing Location resource
+     */
+    public MethodOutcome updateLocation(Location location) {
+        validateClient();
+
+        if (location.getId() == null || location.getId().isEmpty()) {
+            throw new IllegalArgumentException("Location must have an ID for update operation");
+        }
+
+        logger.debug("Updating Location with ID: {}", location.getId());
+
+        try {
+            MethodOutcome outcome = client.update()
+                .resource(location)
+                .execute();
+
+            logger.info("Location updated: {}", location.getId());
+            return outcome;
+        } catch (Exception e) {
+            logger.error("Error updating Location with ID: {}", location.getId(), e);
+            throw new FHIRClientException("Failed to update Location: " + location.getId(), e);
+        }
+    }
+
     // ========== Utility Methods ==========
 
     /**

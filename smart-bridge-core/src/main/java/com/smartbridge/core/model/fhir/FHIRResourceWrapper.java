@@ -5,6 +5,9 @@ import org.hl7.fhir.r4.model.Patient;
 import org.hl7.fhir.r4.model.Observation;
 import org.hl7.fhir.r4.model.Task;
 import org.hl7.fhir.r4.model.MedicationRequest;
+import org.hl7.fhir.r4.model.Encounter;
+import org.hl7.fhir.r4.model.Organization;
+import org.hl7.fhir.r4.model.Location;
 
 import java.time.LocalDateTime;
 
@@ -24,7 +27,10 @@ public class FHIRResourceWrapper<T extends Resource> {
         PATIENT,
         OBSERVATION,
         TASK,
-        MEDICATION_REQUEST
+        MEDICATION_REQUEST,
+        ENCOUNTER,
+        ORGANIZATION,
+        LOCATION
     }
 
     // Constructors
@@ -55,6 +61,18 @@ public class FHIRResourceWrapper<T extends Resource> {
         return new FHIRResourceWrapper<>(medicationRequest, sourceSystem, originalId);
     }
 
+    public static FHIRResourceWrapper<Encounter> forEncounter(Encounter encounter, String sourceSystem, String originalId) {
+        return new FHIRResourceWrapper<>(encounter, sourceSystem, originalId);
+    }
+
+    public static FHIRResourceWrapper<Organization> forOrganization(Organization organization, String sourceSystem, String originalId) {
+        return new FHIRResourceWrapper<>(organization, sourceSystem, originalId);
+    }
+
+    public static FHIRResourceWrapper<Location> forLocation(Location location, String sourceSystem, String originalId) {
+        return new FHIRResourceWrapper<>(location, sourceSystem, originalId);
+    }
+
     // Helper method to determine resource type
     private FHIRResourceType determineResourceType(T resource) {
         if (resource instanceof Patient) {
@@ -65,6 +83,12 @@ public class FHIRResourceWrapper<T extends Resource> {
             return FHIRResourceType.TASK;
         } else if (resource instanceof MedicationRequest) {
             return FHIRResourceType.MEDICATION_REQUEST;
+        } else if (resource instanceof Encounter) {
+            return FHIRResourceType.ENCOUNTER;
+        } else if (resource instanceof Organization) {
+            return FHIRResourceType.ORGANIZATION;
+        } else if (resource instanceof Location) {
+            return FHIRResourceType.LOCATION;
         }
         throw new IllegalArgumentException("Unsupported FHIR resource type: " + resource.getClass().getSimpleName());
     }

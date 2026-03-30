@@ -185,7 +185,109 @@ class FHIRClientServiceTest {
         Exception exception = assertThrows(IllegalStateException.class, () -> {
             clientService.searchObservationsByPatient("patient123", new Date());
         });
-        
+
         assertTrue(exception.getMessage().contains("FHIR client not configured"));
+    }
+
+    // ========== Encounter Operations Tests ==========
+
+    @Test
+    void testCreateEncounterWithoutConfiguration() {
+        Encounter encounter = new Encounter();
+
+        Exception exception = assertThrows(IllegalStateException.class, () -> {
+            clientService.createEncounter(encounter);
+        });
+
+        assertTrue(exception.getMessage().contains("FHIR client not configured"));
+    }
+
+    @Test
+    void testGetEncounterWithoutConfiguration() {
+        Exception exception = assertThrows(IllegalStateException.class, () -> {
+            clientService.getEncounter("enc-123");
+        });
+
+        assertTrue(exception.getMessage().contains("FHIR client not configured"));
+    }
+
+    @Test
+    void testUpdateEncounterWithoutId() {
+        clientService.configure("http://localhost:8080/fhir");
+        Encounter encounter = new Encounter();
+
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            clientService.updateEncounter(encounter);
+        });
+
+        assertTrue(exception.getMessage().contains("Encounter must have an ID"));
+    }
+
+    // ========== Organization Operations Tests ==========
+
+    @Test
+    void testCreateOrganizationWithoutConfiguration() {
+        Organization organization = new Organization();
+
+        Exception exception = assertThrows(IllegalStateException.class, () -> {
+            clientService.createOrganization(organization);
+        });
+
+        assertTrue(exception.getMessage().contains("FHIR client not configured"));
+    }
+
+    @Test
+    void testGetOrganizationWithoutConfiguration() {
+        Exception exception = assertThrows(IllegalStateException.class, () -> {
+            clientService.getOrganization("org-123");
+        });
+
+        assertTrue(exception.getMessage().contains("FHIR client not configured"));
+    }
+
+    @Test
+    void testUpdateOrganizationWithoutId() {
+        clientService.configure("http://localhost:8080/fhir");
+        Organization organization = new Organization();
+
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            clientService.updateOrganization(organization);
+        });
+
+        assertTrue(exception.getMessage().contains("Organization must have an ID"));
+    }
+
+    // ========== Location Operations Tests ==========
+
+    @Test
+    void testCreateLocationWithoutConfiguration() {
+        Location location = new Location();
+
+        Exception exception = assertThrows(IllegalStateException.class, () -> {
+            clientService.createLocation(location);
+        });
+
+        assertTrue(exception.getMessage().contains("FHIR client not configured"));
+    }
+
+    @Test
+    void testGetLocationWithoutConfiguration() {
+        Exception exception = assertThrows(IllegalStateException.class, () -> {
+            clientService.getLocation("loc-123");
+        });
+
+        assertTrue(exception.getMessage().contains("FHIR client not configured"));
+    }
+
+    @Test
+    void testUpdateLocationWithoutId() {
+        clientService.configure("http://localhost:8080/fhir");
+        Location location = new Location();
+
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            clientService.updateLocation(location);
+        });
+
+        assertTrue(exception.getMessage().contains("Location must have an ID"));
     }
 }

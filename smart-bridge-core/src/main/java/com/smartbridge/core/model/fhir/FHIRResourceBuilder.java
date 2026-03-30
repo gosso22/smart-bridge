@@ -309,6 +309,215 @@ public class FHIRResourceBuilder {
         }
     }
 
+    /**
+     * Builder for FHIR R4 Encounter resources
+     */
+    public static class EncounterBuilder {
+        private final Encounter encounter;
+
+        public EncounterBuilder() {
+            this.encounter = new Encounter();
+            this.encounter.setStatus(Encounter.EncounterStatus.FINISHED);
+        }
+
+        public EncounterBuilder withId(String id) {
+            encounter.setId(id);
+            return this;
+        }
+
+        public EncounterBuilder withIdentifier(String system, String value) {
+            Identifier identifier = new Identifier();
+            identifier.setSystem(system);
+            identifier.setValue(value);
+            encounter.addIdentifier(identifier);
+            return this;
+        }
+
+        public EncounterBuilder withStatus(Encounter.EncounterStatus status) {
+            encounter.setStatus(status);
+            return this;
+        }
+
+        public EncounterBuilder withClass(String system, String code, String display) {
+            Coding classCoding = new Coding();
+            classCoding.setSystem(system);
+            classCoding.setCode(code);
+            classCoding.setDisplay(display);
+            encounter.setClass_(classCoding);
+            return this;
+        }
+
+        public EncounterBuilder withType(String system, String code, String display) {
+            CodeableConcept type = new CodeableConcept();
+            Coding coding = new Coding();
+            coding.setSystem(system);
+            coding.setCode(code);
+            coding.setDisplay(display);
+            type.addCoding(coding);
+            encounter.addType(type);
+            return this;
+        }
+
+        public EncounterBuilder withSubject(String patientReference) {
+            Reference subject = new Reference(patientReference);
+            encounter.setSubject(subject);
+            return this;
+        }
+
+        public EncounterBuilder withParticipant(String practitionerReference) {
+            Encounter.EncounterParticipantComponent participant = new Encounter.EncounterParticipantComponent();
+            participant.setIndividual(new Reference(practitionerReference));
+            encounter.addParticipant(participant);
+            return this;
+        }
+
+        public EncounterBuilder withPeriodStart(Date start) {
+            if (encounter.getPeriod() == null) {
+                encounter.setPeriod(new Period());
+            }
+            encounter.getPeriod().setStart(start);
+            return this;
+        }
+
+        public EncounterBuilder withPeriodEnd(Date end) {
+            if (encounter.getPeriod() == null) {
+                encounter.setPeriod(new Period());
+            }
+            encounter.getPeriod().setEnd(end);
+            return this;
+        }
+
+        public Encounter build() {
+            return encounter;
+        }
+    }
+
+    /**
+     * Builder for FHIR R4 Organization resources
+     */
+    public static class OrganizationBuilder {
+        private final Organization organization;
+
+        public OrganizationBuilder() {
+            this.organization = new Organization();
+            this.organization.setActive(true);
+        }
+
+        public OrganizationBuilder withId(String id) {
+            organization.setId(id);
+            return this;
+        }
+
+        public OrganizationBuilder withIdentifier(String system, String value) {
+            Identifier identifier = new Identifier();
+            identifier.setSystem(system);
+            identifier.setValue(value);
+            organization.addIdentifier(identifier);
+            return this;
+        }
+
+        public OrganizationBuilder withName(String name) {
+            organization.setName(name);
+            return this;
+        }
+
+        public OrganizationBuilder withType(String system, String code, String display) {
+            CodeableConcept type = new CodeableConcept();
+            Coding coding = new Coding();
+            coding.setSystem(system);
+            coding.setCode(code);
+            coding.setDisplay(display);
+            type.addCoding(coding);
+            organization.addType(type);
+            return this;
+        }
+
+        public OrganizationBuilder withPartOf(String organizationReference) {
+            Reference partOf = new Reference(organizationReference);
+            organization.setPartOf(partOf);
+            return this;
+        }
+
+        public OrganizationBuilder withActive(boolean active) {
+            organization.setActive(active);
+            return this;
+        }
+
+        public OrganizationBuilder withContact(String name, String phone) {
+            Organization.OrganizationContactComponent contact = new Organization.OrganizationContactComponent();
+            if (name != null) {
+                HumanName humanName = new HumanName();
+                humanName.setText(name);
+                contact.setName(humanName);
+            }
+            if (phone != null) {
+                ContactPoint telecom = new ContactPoint();
+                telecom.setSystem(ContactPoint.ContactPointSystem.PHONE);
+                telecom.setValue(phone);
+                contact.addTelecom(telecom);
+            }
+            organization.addContact(contact);
+            return this;
+        }
+
+        public Organization build() {
+            return organization;
+        }
+    }
+
+    /**
+     * Builder for FHIR R4 Location resources
+     */
+    public static class LocationBuilder {
+        private final Location location;
+
+        public LocationBuilder() {
+            this.location = new Location();
+            this.location.setStatus(Location.LocationStatus.ACTIVE);
+        }
+
+        public LocationBuilder withId(String id) {
+            location.setId(id);
+            return this;
+        }
+
+        public LocationBuilder withIdentifier(String system, String value) {
+            Identifier identifier = new Identifier();
+            identifier.setSystem(system);
+            identifier.setValue(value);
+            location.addIdentifier(identifier);
+            return this;
+        }
+
+        public LocationBuilder withName(String name) {
+            location.setName(name);
+            return this;
+        }
+
+        public LocationBuilder withPosition(double latitude, double longitude) {
+            Location.LocationPositionComponent position = new Location.LocationPositionComponent();
+            position.setLatitude(new java.math.BigDecimal(latitude));
+            position.setLongitude(new java.math.BigDecimal(longitude));
+            location.setPosition(position);
+            return this;
+        }
+
+        public LocationBuilder withManagingOrganization(String organizationReference) {
+            Reference managingOrg = new Reference(organizationReference);
+            location.setManagingOrganization(managingOrg);
+            return this;
+        }
+
+        public LocationBuilder withStatus(Location.LocationStatus status) {
+            location.setStatus(status);
+            return this;
+        }
+
+        public Location build() {
+            return location;
+        }
+    }
+
     // Static factory methods for builders
     public static PatientBuilder patient() {
         return new PatientBuilder();
@@ -324,5 +533,17 @@ public class FHIRResourceBuilder {
 
     public static MedicationRequestBuilder medicationRequest() {
         return new MedicationRequestBuilder();
+    }
+
+    public static EncounterBuilder encounter() {
+        return new EncounterBuilder();
+    }
+
+    public static OrganizationBuilder organization() {
+        return new OrganizationBuilder();
+    }
+
+    public static LocationBuilder location() {
+        return new LocationBuilder();
     }
 }

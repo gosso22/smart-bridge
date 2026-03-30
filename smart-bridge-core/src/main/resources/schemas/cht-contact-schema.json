@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CHT Contact Schema",
+  "description": "JSON schema for validating CHT person/contact data structure from CouchDB",
+  "type": "object",
+  "required": ["_id", "name", "type"],
+  "properties": {
+    "_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "CouchDB document ID (required)"
+    },
+    "_rev": {
+      "type": ["string", "null"],
+      "description": "CouchDB revision marker"
+    },
+    "type": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Document type (e.g. contact)"
+    },
+    "contact_type": {
+      "type": ["string", "null"],
+      "description": "Contact type (e.g. person, clinic, health_center)"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Contact full name (required)"
+    },
+    "short_name": {
+      "type": ["string", "null"],
+      "description": "Short display name"
+    },
+    "date_of_birth": {
+      "type": ["string", "null"],
+      "description": "Date of birth as ISO date string (e.g. 1985-06-15)"
+    },
+    "sex": {
+      "type": ["string", "null"],
+      "description": "Sex (male, female)"
+    },
+    "phone": {
+      "type": ["string", "null"],
+      "description": "Phone number"
+    },
+    "notes": {
+      "type": ["string", "null"],
+      "description": "Free-text notes"
+    },
+    "patient_id": {
+      "type": ["string", "null"],
+      "description": "CHT short patient ID code"
+    },
+    "parent": {
+      "type": ["object", "null"],
+      "description": "Reference to parent place in the hierarchy"
+    },
+    "reported_date": {
+      "type": ["number", "null"],
+      "description": "Creation timestamp in epoch milliseconds"
+    },
+    "linked_docs": {
+      "type": ["object", "null"],
+      "description": "Map of linked document tags to UUIDs"
+    }
+  },
+  "additionalProperties": true
+}

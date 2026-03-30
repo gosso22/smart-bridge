@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CHT Report Schema",
+  "description": "JSON schema for validating CHT report/form submission data structure from CouchDB",
+  "type": "object",
+  "required": ["_id", "type", "form", "reported_date"],
+  "properties": {
+    "_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "CouchDB document ID (required)"
+    },
+    "_rev": {
+      "type": ["string", "null"],
+      "description": "CouchDB revision marker"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["data_record"],
+      "description": "Document type (must be data_record)"
+    },
+    "form": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Form identifier (e.g. pregnancy_visit, immunization)"
+    },
+    "fields": {
+      "type": ["object", "null"],
+      "description": "Map of form field names to submitted values"
+    },
+    "contact": {
+      "type": ["object", "null"],
+      "description": "Reference to the submitting contact (CHW/nurse)"
+    },
+    "patient_id": {
+      "type": ["string", "null"],
+      "description": "CHT short patient ID of the subject"
+    },
+    "patient_uuid": {
+      "type": ["string", "null"],
+      "description": "CouchDB UUID of the patient contact"
+    },
+    "reported_date": {
+      "type": "number",
+      "description": "Submission timestamp in epoch milliseconds (required)"
+    },
+    "geolocation": {
+      "type": ["string", "null"],
+      "description": "GPS coordinates as lat lon string"
+    },
+    "errors": {
+      "type": ["array", "null"],
+      "description": "Validation errors on the report"
+    }
+  },
+  "additionalProperties": true
+}

@@ -4,6 +4,7 @@ import org.hl7.fhir.r4.model.*;
 import org.hl7.fhir.r4.model.Enumerations.AdministrativeGender;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Date;
 
@@ -138,5 +139,148 @@ class FHIRResourceBuilderTest {
         assertNotNull(patient);
         assertEquals(1, patient.getIdentifier().size());
         assertTrue(patient.getName().isEmpty());
+    }
+
+    // ========== Encounter Builder Tests ==========
+
+    @Test
+    void testEncounterBuilder_withAllFields() {
+        Date now = new Date();
+
+        Encounter encounter = FHIRResourceBuilder.encounter()
+            .withId("enc-001")
+            .withIdentifier("http://moh.go.tz/identifier/cht-report-uuid", "cht-report-001")
+            .withStatus(Encounter.EncounterStatus.FINISHED)
+            .withClass("http://terminology.hl7.org/CodeSystem/v3-ActCode", "AMB", "ambulatory")
+            .withType("http://moh.go.tz/identifier/cht-form-type", "pregnancy_visit", "Pregnancy Visit")
+            .withSubject("Patient/patient-123")
+            .withParticipant("Practitioner/chw-001")
+            .withPeriodStart(now)
+            .build();
+
+        assertNotNull(encounter);
+        assertEquals("enc-001", encounter.getId());
+        assertEquals(Encounter.EncounterStatus.FINISHED, encounter.getStatus());
+        assertEquals(1, encounter.getIdentifier().size());
+        assertEquals("cht-report-001", encounter.getIdentifier().get(0).getValue());
+        assertEquals("AMB", encounter.getClass_().getCode());
+        assertEquals(1, encounter.getType().size());
+        assertEquals("pregnancy_visit", encounter.getType().get(0).getCodingFirstRep().getCode());
+        assertEquals("Patient/patient-123", encounter.getSubject().getReference());
+        assertEquals(1, encounter.getParticipant().size());
+        assertEquals("Practitioner/chw-001", encounter.getParticipant().get(0).getIndividual().getReference());
+        assertEquals(now, encounter.getPeriod().getStart());
+    }
+
+    @Test
+    void testEncounterBuilder_minimalFields() {
+        Encounter encounter = FHIRResourceBuilder.encounter()
+            .withIdentifier("http://example.org", "enc-min")
+            .build();
+
+        assertNotNull(encounter);
+        assertEquals(Encounter.EncounterStatus.FINISHED, encounter.getStatus());
+        assertEquals(1, encounter.getIdentifier().size());
+    }
+
+    @Test
+    void testEncounterBuilder_withPeriodStartAndEnd() {
+        Date start = new Date(1680000000000L);
+        Date end = new Date(1680003600000L);
+
+        Encounter encounter = FHIRResourceBuilder.encounter()
+            .withPeriodStart(start)
+            .withPeriodEnd(end)
+            .build();
+
+        assertNotNull(encounter.getPeriod());
+        assertEquals(start, encounter.getPeriod().getStart());
+        assertEquals(end, encounter.getPeriod().getEnd());
+    }
+
+    // ========== Organization Builder Tests ==========
+
+    @Test
+    void testOrganizationBuilder_withAllFields() {
+        Organization org = FHIRResourceBuilder.organization()
+            .withId("org-001")
+            .withIdentifier("http://moh.go.tz/identifier/cht-place-uuid", "cht-clinic-001")
+            .withName("Kariakoo Clinic")
+            .withType("http://terminology.hl7.org/CodeSystem/organization-type", "team", "Team")
+            .withPartOf("Organization/org-parent-001")
+            .withActive(true)
+            .withContact("Dr. Hassan", "+255712345678")
+            .build();
+
+        assertNotNull(org);
+        assertEquals("org-001", org.getId());
+        assertEquals("Kariakoo Clinic", org.getName());
+        assertTrue(org.getActive());
+        assertEquals(1, org.getIdentifier().size());
+        assertEquals("cht-clinic-001", org.getIdentifier().get(0).getValue());
+        assertEquals(1, org.getType().size());
+        assertEquals("team", org.getType().get(0).getCodingFirstRep().getCode());
+        assertEquals("Organization/org-parent-001", org.getPartOf().getReference());
+        assertEquals(1, org.getContact().size());
+        assertEquals("Dr. Hassan", org.getContact().get(0).getName().getText());
+        assertEquals("+255712345678", org.getContact().get(0).getTelecomFirstRep().getValue());
+    }
+
+    @Test
+    void testOrganizationBuilder_minimalFields() {
+        Organization org = FHIRResourceBuilder.organization()
+            .withName("Test Org")
+            .build();
+
+        assertNotNull(org);
+        assertEquals("Test Org", org.getName());
+        assertTrue(org.getActive());
+    }
+
+    @Test
+    void testOrganizationBuilder_withContactNameOnly() {
+        Organization org = FHIRResourceBuilder.organization()
+            .withName("Clinic")
+            .withContact("Nurse Amina", null)
+            .build();
+
+        assertEquals(1, org.getContact().size());
+        assertEquals("Nurse Amina", org.getContact().get(0).getName().getText());
+        assertTrue(org.getContact().get(0).getTelecom().isEmpty());
+    }
+
+    // ========== Location Builder Tests ==========
+
+    @Test
+    void testLocationBuilder_withAllFields() {
+        Location loc = FHIRResourceBuilder.location()
+            .withId("loc-001")
+            .withIdentifier("http://moh.go.tz/identifier/cht-place-uuid", "cht-clinic-001")
+            .withName("Kariakoo Clinic")
+            .withPosition(-6.8235, 39.2695)
+            .withManagingOrganization("Organization/org-001")
+            .withStatus(Location.LocationStatus.ACTIVE)
+            .build();
+
+        assertNotNull(loc);
+        assertEquals("loc-001", loc.getId());
+        assertEquals("Kariakoo Clinic", loc.getName());
+        assertEquals(Location.LocationStatus.ACTIVE, loc.getStatus());
+        assertEquals(1, loc.getIdentifier().size());
+        assertNotNull(loc.getPosition());
+        assertEquals(-6.8235, loc.getPosition().getLatitude().doubleValue(), 0.0001);
+        assertEquals(39.2695, loc.getPosition().getLongitude().doubleValue(), 0.0001);
+        assertEquals("Organization/org-001", loc.getManagingOrganization().getReference());
+    }
+
+    @Test
+    void testLocationBuilder_minimalFields() {
+        Location loc = FHIRResourceBuilder.location()
+            .withName("Test Location")
+            .build();
+
+        assertNotNull(loc);
+        assertEquals("Test Location", loc.getName());
+        assertEquals(Location.LocationStatus.ACTIVE, loc.getStatus());
     }
 }
