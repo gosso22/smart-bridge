@@ -94,14 +94,15 @@ public class CHTToFHIRPlaceTransformer {
             .withIdentifier(CHT_PLACE_UUID_SYSTEM, place.getId())
             .withName(place.getName());
 
-        // Map contact_type to Organization type
-        if (place.getContactType() != null) {
-            String[] typeInfo = CONTACT_TYPE_MAP.get(place.getContactType());
+        // Map contact_type (or type for real CHT data) to Organization type
+        String effectiveContactType = place.getContactType() != null ? place.getContactType() : place.getType();
+        if (effectiveContactType != null) {
+            String[] typeInfo = CONTACT_TYPE_MAP.get(effectiveContactType);
             if (typeInfo != null) {
                 builder.withType(ORG_TYPE_SYSTEM, typeInfo[0], typeInfo[1]);
             } else {
-                // Unknown contact_type — use as-is
-                builder.withType(ORG_TYPE_SYSTEM, place.getContactType(), place.getContactType());
+                // Unknown type — use as-is
+                builder.withType(ORG_TYPE_SYSTEM, effectiveContactType, effectiveContactType);
             }
         }
 
