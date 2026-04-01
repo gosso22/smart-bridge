@@ -78,6 +78,22 @@ smartbridge:
       client-id: ${UCS_KEYCLOAK_CLIENT_ID:opensrp-client}
       client-secret: ${UCS_KEYCLOAK_CLIENT_SECRET:}
 
+  # CHT (Community Health Toolkit) configuration
+  cht:
+    api-url: ${CHT_API_URL:http://localhost:5988}
+    timeout: ${CHT_TIMEOUT:30000}
+    username: ${CHT_USERNAME:medic}
+    password: ${CHT_PASSWORD:password}
+    couchdb-url: ${CHT_COUCHDB_URL:}
+    sync:
+      enabled: ${CHT_SYNC_ENABLED:true}
+      interval-ms: ${CHT_SYNC_INTERVAL_MS:300000}
+      initial-delay-ms: ${CHT_SYNC_INITIAL_DELAY_MS:30000}
+      batch-size: ${CHT_SYNC_BATCH_SIZE:100}
+      use-changes-feed: ${CHT_USE_CHANGES_FEED:true}
+    webhook:
+      enabled: ${CHT_WEBHOOK_ENABLED:true}
+
   # Sync configuration
   sync:
     interval-ms: ${SYNC_INTERVAL_MS:300000}  # 5 minutes
@@ -203,7 +219,13 @@ smartbridge:
   
   ucs:
     api-url: ${UCS_API_URL:https://ucs-prod.internal/api}
-  
+
+  cht:
+    api-url: ${CHT_API_URL:https://cht-prod.internal}
+    sync:
+      batch-size: 200
+      use-changes-feed: true
+
   transformation:
     strict-mode: true
     validation-enabled: true

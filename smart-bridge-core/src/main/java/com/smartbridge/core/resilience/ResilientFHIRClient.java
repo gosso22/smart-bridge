@@ -142,6 +142,27 @@ public class ResilientFHIRClient {
     }
 
     /**
+     * Create an Encounter resource with resilience patterns.
+     */
+    public MethodOutcome createEncounter(Encounter encounter) throws Exception {
+        return executeWithResilience(() -> fhirClient.createEncounter(encounter), "createEncounter");
+    }
+
+    /**
+     * Create an Organization resource with resilience patterns.
+     */
+    public MethodOutcome createOrganization(Organization organization) throws Exception {
+        return executeWithResilience(() -> fhirClient.createOrganization(organization), "createOrganization");
+    }
+
+    /**
+     * Create a Location resource with resilience patterns.
+     */
+    public MethodOutcome createLocation(Location location) throws Exception {
+        return executeWithResilience(() -> fhirClient.createLocation(location), "createLocation");
+    }
+
+    /**
      * Create a MedicationRequest resource with resilience patterns.
      */
     public MethodOutcome createMedicationRequest(MedicationRequest medicationRequest) throws Exception {

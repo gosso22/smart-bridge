@@ -59,6 +59,26 @@ public class ResilienceConfig {
     }
 
     @Bean
+    public CircuitBreaker chtCircuitBreaker() {
+        return new CircuitBreaker(
+            "CHT",
+            circuitBreaker.getFailureThreshold(),
+            Duration.ofSeconds(circuitBreaker.getCooldownSeconds()),
+            circuitBreaker.getSuccessThreshold()
+        );
+    }
+
+    @Bean
+    public RetryPolicy chtRetryPolicy() {
+        return new RetryPolicy.Builder("CHT")
+            .maxAttempts(retry.getMaxAttempts())
+            .initialDelay(Duration.ofMillis(retry.getInitialDelayMillis()))
+            .maxDelay(Duration.ofMillis(retry.getMaxDelayMillis()))
+            .backoffMultiplier(retry.getBackoffMultiplier())
+            .build();
+    }
+
+    @Bean
     public NetworkMonitor networkMonitor() {
         return new NetworkMonitor(
             Duration.ofSeconds(networkMonitor.getCheckIntervalSeconds()),

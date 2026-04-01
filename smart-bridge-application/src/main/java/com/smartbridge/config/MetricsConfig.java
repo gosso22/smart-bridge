@@ -39,4 +39,55 @@ public class MetricsConfig {
                 .description("Conflicts detected during reverse sync")
                 .register(registry);
     }
+
+    // ==================== CHT Metrics ====================
+
+    @Bean
+    public Timer chtTransformationTimer(MeterRegistry registry) {
+        return Timer.builder("smartbridge.cht.transformation.duration")
+                .description("Duration of CHT transformation operations")
+                .register(registry);
+    }
+
+    @Bean
+    public Counter chtTransformationSuccessCounter(MeterRegistry registry) {
+        return Counter.builder("smartbridge.cht.transformation.success")
+                .description("Successful CHT transformation operations")
+                .register(registry);
+    }
+
+    @Bean
+    public Counter chtTransformationErrorCounter(MeterRegistry registry) {
+        return Counter.builder("smartbridge.cht.transformation.error")
+                .description("Failed CHT transformation operations")
+                .register(registry);
+    }
+
+    @Bean
+    public Counter chtSyncBatchCounter(MeterRegistry registry) {
+        return Counter.builder("smartbridge.cht.sync.batch")
+                .description("CHT sync batch operations")
+                .register(registry);
+    }
+
+    @Bean
+    public Timer chtReverseSyncTimer(MeterRegistry registry) {
+        return Timer.builder("smartbridge.cht.reverse.sync.duration")
+                .description("Duration of CHT reverse sync operations")
+                .register(registry);
+    }
+
+    @Bean
+    public Counter chtReverseSyncSuccessCounter(MeterRegistry registry) {
+        return Counter.builder("smartbridge.cht.reverse.sync.success")
+                .description("Successful CHT reverse sync operations")
+                .register(registry);
+    }
+
+    @Bean
+    public Counter chtReverseSyncErrorCounter(MeterRegistry registry) {
+        return Counter.builder("smartbridge.cht.reverse.sync.error")
+                .description("Failed CHT reverse sync operations")
+                .register(registry);
+    }
 }
