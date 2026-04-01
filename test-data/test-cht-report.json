@@ -1,0 +1,56 @@
+{
+  "_id": "42762c2b-b082-445f-9cc7-17093e5520a8",
+  "_rev": "1-99db299061fa55824a3bc5669dd48b20",
+  "form": "infant_child",
+  "type": "data_record",
+  "content_type": "xml",
+  "reported_date": 1774948502253,
+  "contact": {
+    "_id": "f9120a3c-1b55-5d5e-87cc-6b6773d7984a",
+    "parent": {
+      "_id": "41da8c22-6f4e-5d8c-9a6f-52bd10f29b60",
+      "parent": {
+        "_id": "91fa8bc1-eac1-5b2a-9fc4-cb1c893a6c73"
+      }
+    }
+  },
+  "from": "0275258329500",
+  "form_version": {
+    "time": 1774701492390,
+    "sha256": "1898492ab42562f9545ed6852ff3423a5c730ed88d064830340cad86dd2bd0b8"
+  },
+  "hidden_fields": [
+    "meta"
+  ],
+  "fields": {
+    "patient_id": "9339db36-040b-4c0c-b2b2-347f5c44983c",
+    "child_name": "Hassan Ali Juma",
+    "child_date_of_birth": "2022-10-15",
+    "age_months": "42",
+    "age_years": "3",
+    "visit_id": "infant_child_year_3_visit",
+    "vitals": {
+      "child_weight": "7",
+      "child_height": "52",
+      "malnutrition_screening": {
+        "muac": {
+          "muac_measures_6m_5y": "20"
+        }
+      }
+    },
+    "immunization_status": "delayed",
+    "person_sex": "male",
+    "consent": {
+      "child_consent_today": "yes"
+    },
+    "meta": {
+      "instanceID": "uuid:3746d58e-eab9-450d-bc5e-0b9afd591e8a"
+    }
+  },
+  "geolocation": {
+    "latitude": -6.7788575,
+    "longitude": 39.2548602,
+    "altitude": null,
+    "accuracy": 10.892
+  }
+}
